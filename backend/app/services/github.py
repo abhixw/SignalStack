@@ -6,16 +6,42 @@ from app.config.config import config
 class GitHubService:
     def __init__(self):
         self.token = config.GITHUB_TOKEN
-        self.headers = {"Authorization": f"token {self.token}"} if self.token else {}
+        self.headers = {
+            "Authorization": f"token {self.token}",
+            "User-Agent": "SignalStack-Agent/1.0"
+        } if self.token else {
+            "User-Agent": "SignalStack-Agent/1.0"
+        }
         self.api_base = "https://api.github.com"
 
     def _normalize_repo_url(self, repo_url: str) -> tuple[str, str]:
         """Extract owner and repo from various GitHub URL formats."""
-        # Remove trailing slashes and .git suffix
-        url = repo_url.rstrip('/').rstrip('.git')
+        # Remove trailing slashes
+        url = repo_url.rstrip('/')
+        # Remove .git suffix if present (using endswith to avoid stripping other chars)
+        if url.endswith('.git'):
+            url = url[:-4]
+            
         parts = url.split('/')
         owner, repo = parts[-2], parts[-1]
         return owner, repo
+
+    def _request(self, url: str) -> requests.Response:
+        """Helper to make requests with retry logic for public repos."""
+        session = requests.Session()
+        session.trust_env = False  # Fix for local environment proxy issues
+        
+        try:
+            response = session.get(url, headers=self.headers)
+            if response.status_code in [401, 403, 404] and self.token:
+                # Try without token (in case token is invalid or rate limited but public access works)
+                print(f"Request failed with {response.status_code}. Retrying without token...")
+                headers = {"User-Agent": "SignalStack-Agent/1.0"}
+                response = session.get(url, headers=headers)
+            return response
+        except Exception as e:
+            print(f"Request error: {e}")
+            return None
 
     def get_repo_content(self, repo_url: str, path: str = "") -> List[Dict]:
         # Extract owner/repo from URL
@@ -25,8 +51,8 @@ class GitHubService:
             return []
 
         url = f"{self.api_base}/repos/{owner}/{repo}/contents/{path}"
-        response = requests.get(url, headers=self.headers)
-        if response.status_code == 200:
+        response = self._request(url)
+        if response and response.status_code == 200:
             return response.json()
         return []
 
@@ -34,8 +60,8 @@ class GitHubService:
         try:
             owner, repo = self._normalize_repo_url(repo_url)
             url = f"{self.api_base}/repos/{owner}/{repo}/contents/{file_path}"
-            response = requests.get(url, headers=self.headers)
-            if response.status_code == 200:
+            response = self._request(url)
+            if response and response.status_code == 200:
                 content = response.json().get("content", "")
                 return base64.b64decode(content).decode('utf-8')
         except Exception as e:
@@ -47,14 +73,21 @@ class GitHubService:
         default_branch = "main"
         try:
             owner, repo = self._normalize_repo_url(repo_url)
-            repo_info = requests.get(f"{self.api_base}/repos/{owner}/{repo}", headers=self.headers).json()
-            default_branch = repo_info.get("default_branch", "main")
+            
+            # Get repo info to find default branch
+            repo_url_api = f"{self.api_base}/repos/{owner}/{repo}"
+            repo_response = self._request(repo_url_api)
+            
+            if repo_response and repo_response.status_code == 200:
+                default_branch = repo_response.json().get("default_branch", "main")
             
             tree_url = f"{self.api_base}/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1"
-            response = requests.get(tree_url, headers=self.headers)
-            if response.status_code == 200:
+            response = self._request(tree_url)
+            
+            if response and response.status_code == 200:
                 return [item['path'] for item in response.json().get('tree', [])], default_branch
-        except:
+        except Exception as e:
+            print(f"Error getting tree: {e}")
             pass
         return [], default_branch
 

@@ -1,0 +1,27 @@
+TEST SCENARIO: Intelligent Customer Support Ticket Classification
+
+Copy and paste the following description into the "Suggest with AI" box in SignalLayer:
+
+"Build an Intelligent Customer Support Ticket Classification System using Flask and Scikit-learn. The system should expose a REST API for ticket classification and provide a simple HTML/CSS frontend. It needs to handle text classification, urgency detection, and be ready for deployment on Render. The ML model should be trained on a custom dataset."
+
+EXPECTED OUTPUT (SignalLayer should generate tasks similar to these):
+
+1. Train & Evaluate ML Model
+   Outcome: Trained model artifact (.pkl) with >80% F1 score on test set.
+   Importance: High
+
+2. Implement Inference Pipeline
+   Outcome: API endpoint that accepts raw text and returns prediction with confidence score.
+   Importance: High
+
+3. Design RESTful API Specification
+   Outcome: OpenAPI 3.0 (Swagger) spec defining all endpoints, request/response schemas, and error codes.
+   Importance: High
+
+4. Build Reusable Component Library
+   Outcome: Set of atomic UI components (Buttons, Inputs, Cards) with consistent styling.
+   Importance: Medium
+
+5. Containerize Application
+   Outcome: Multi-stage Dockerfile optimized for production size and security.
+   Importance: Medium

@@ -40,23 +40,17 @@ class SignalExtractor:
         # 6. ML Libraries
         ml_keywords = ["scikit", "sklearn", "tensorflow", "pytorch", "keras", "xgboost", "numpy", "pandas"]
         signals["ml_libraries"] = 0.0
+        checked_files = 0
         for f in files:
             if "requirements" in f.lower() or "setup.py" in f.lower():
+                if checked_files >= 5: break
                 content = self.github.get_file_content(repo_url, f)
+                checked_files += 1
                 if any(kw in content.lower() for kw in ml_keywords):
                     signals["ml_libraries"] = 1.0
                     break
         
-        # ===== WEB / API SIGNALS =====
-        # 7. Flask / FastAPI / Django
-        web_keywords = ["flask", "fastapi", "django", "@app.route", "@router"]
-        signals["web_framework"] = 0.0
-        for f in files:
-            if f.endswith(".py"):
-                content = self.github.get_file_content(repo_url, f)
-                if any(kw in content.lower() for kw in web_keywords):
-                    signals["web_framework"] = 1.0
-                    break
+        # ... (web_framework is already done) ...
         
         # 8. HTML Templates
         has_templates = any("templates/" in f or f.endswith(".html") for f in files)
@@ -70,9 +64,12 @@ class SignalExtractor:
         # 10. NLP Libraries
         nlp_keywords = ["nltk", "spacy", "textblob", "tfidf", "vectorizer", "tokenizer"]
         signals["nlp_present"] = 0.0
+        checked_files = 0
         for f in files:
             if f.endswith(".py"):
+                if checked_files >= 10: break
                 content = self.github.get_file_content(repo_url, f)
+                checked_files += 1
                 if any(kw in content.lower() for kw in nlp_keywords):
                     signals["nlp_present"] = 1.0
                     break

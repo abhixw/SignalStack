@@ -1,0 +1,48 @@
+# 🏆 The "Golden Path" Demo Script (Hackathon Winner)
+
+Follow this EXACT sequence to demonstrate the full power of SignalLayer.
+
+## 1. Create the "Perfect Match" Outcome
+1.  **Go to:** [Dashboard](http://localhost:5173/)
+2.  **Click:** `+ New Outcome`
+3.  **Title:** `Senior Python Backend Engineer (FastAPI)`
+4.  **Description:** (Copy & Paste this exactly)
+    ```text
+    We are looking for a Principal Engineer to build high-performance async APIs.
+    
+    Must have:
+    - Deep expertise in FastAPI, Starlette, and Pydantic.
+    - Strong understanding of Python type hints and dependency injection.
+    - Experience building robust, production-ready web frameworks.
+    - Ability to maintain high code quality and test coverage.
+    - Active open-source contribution history.
+    ```
+5.  **Click:** `Suggest with AI` (Watch the tasks auto-generate)
+6.  **Click:** `Create Outcome`
+
+## 2. Submit the "Perfect Proof"
+1.  You will be redirected to the **Outcome Dashboard**.
+2.  **Click:** `Submit Proof` (Top right)
+3.  **Candidate ID:** `sebastian-ramirez` (The creator of FastAPI)
+4.  **GitHub URL:** `https://github.com/fastapi/fastapi`
+    - *✨ WAIT for the Live Preview to load the file tree!*
+5.  **Click:** `Submit Proof`
+
+## 3. The "Wow" Moment (Evaluation)
+1.  Go back to the **Dashboard**.
+2.  **Click:** The `Senior Python Backend Engineer` card.
+3.  **Wait:** You will see "Evaluating Proofs..." (The AI is reading commits, authors, and code).
+4.  **Observe Results:**
+    - **Fit Score:** Should be **95%+** (High Confidence).
+    - **Deep Analysis:** Look for "Commit History" signals in the "System Signals" section.
+    - **Evidence:** Click the file links to see the actual source code.
+
+## 4. The "Fairness" Feature (Reviewer Queue)
+1.  **Click:** `Review Queue` (Top Nav).
+2.  **Toggle:** `Anonymized Review` (Top Right).
+3.  **Notice:** `sebastian-ramirez` becomes `Candidate seba...`.
+4.  **Action:** Click the card, then click `Advance to Interview`.
+
+## 5. The "Enterprise" Feature (Audit Logs)
+1.  **Click:** `Audit Logs` (Top Nav).
+2.  **Verify:** See the trail of "Outcome Created", "Proof Submitted", and "Feedback Given".
