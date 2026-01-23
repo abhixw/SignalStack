@@ -1,0 +1,622 @@
+1 — Full Feature List (scope = MVP → Near-term → Vision) 
+I. Core (MUST for MVP) 
+1. Outcome Definition UI (Frai-style) — structured outcome + success criteria + optional 
+bias weights. 
+2. Proof Submission UI — candidate pastes artifact (MVP: GitHub repo URL) and short 
+note. 
+3. Artifact Ingestion (GitHub fetcher) — fetch README, file tree, commit history, latest 
+commits (metadata snapshot). 
+4. Signal Extraction (deterministic + LLM-assisted summarizer) — produce measurable 
+signals and human-readable summary. 
+5. Evaluator (strict JSON output) — given outcome + signals → produce fit_score, 
+work_allocation, evidence[], risk_flags, confidence. 
+6. Task Decomposition (manual in MVP, auto-assisted option) — split outcome into 1–3 
+tasks. 
+7. Allocation Engine — task → candidate mapping (weighted-signal scoring). 
+8. Post-hire Feedback API — record success/failure, retention, incidents. 
+9. Learning Loop (deterministic weight adjustments) — update signal weights from 
+feedback. 
+10. Plugin API endpoints (/plugin/evaluate, /plugin/feedback, /plugin/status) + OpenAPI 
+doc. 
+11. Minimal Reviewer UI — evaluation cards, evidence links, action buttons (Advance / 
+Request follow-up / Mark feedback). 
+II. High-value supporting (implement if time) 
+12. Explainability panel (evidence snippets with file + line references). 
+13. Audit log + raw LLM prompt/response viewer (for safety). 
+14. One non-dev artifact parser (MVP: Sales CRM CSV ingestion). 
+15. Anonymized review toggle (hide personal fields). 
+16. Admin prompt manager (edit evaluator/summarizer prompt templates). 
+III. Nice-to-have (explain, do later) 
+17. Living candidate profiles (auto-refresh as new artifacts appear). 
+18. Vector store & semantic search (Pinecone/Weaviate) for continuous discovery. 
+19. Auto task decomposition (LLM-assisted) for complex outcomes. 
+20. Marketplace features (contracts, partial task bidding, trial offers). 
+2 — Complete End-to-End Flow with Concrete Example 
+I'll walk the system through a single concrete example. Use this when you demo or explain to 
+mentors/judges. 
+Example data (concrete) 
+ Outcome (from recruiter): 
+o id: payments-api-v1 
+o title: Build payments API - v1 
+o description: "Deliver a production payments API supporting 50k RPM, 
+idempotent charge creation, and end-to-end tests within 90 days" 
+o tasks: ["Schema design", "Rate limiting & middleware", "Deployment & 
+Observability"] 
+o success_criteria: 
+{"latency_p95":"<200ms","error_rate":"<1%","test_coverage":">=70%"} 
+o initial_bias: {"schema_design":0.4,"rate_limiting":0.4,"deployment":0.2} 
+ Candidate A proof: 
+o GitHub URL: https://github.com/demo-user/payments-sample 
+o Snapshot extracted: README (mentions "cursor-based sync"), 
+src/db/migrations/001_init.sql showing schema, commit history shows alice 
+authored migration commits and small rollback commits. 
+ Candidate B proof: 
+o GitHub URL: https://github.com/another-user/rate-throttle 
+o Snapshot: README indicates "token-bucket limiter", 
+src/middleware/ratelimit.py, history shows performance tuning commits, 
+benchmark notes in BENCHMARKS.md. 
+Step-by-step flow (system actions) 
+1. Frai calls plugin 
+Request: 
+2. POST /plugin/evaluate 
+3. { 
+4.   
+5.   
+6.   
+7.     
+"request_id":"r-001", 
+"outcome":{...payments-api-v1...}, 
+"proofs":[ 
+{"candidate_id":"candA","type":"github","payload":{"repo":"https://github.com/demo
+user/payments-sample"}}, 
+8.     
+9.   
+{"candidate_id":"candB","type":"github","payload":{"repo":"https://github.com/another
+user/rate-throttle"}} 
+] 
+10. } 
+11. Proof ingestion 
+o Plugin fetches both public repos: README, file list, last 100 commits, 
+contributors, notable files. 
+o Stores snapshot: snapshots/{proof_id}.json with metadata and raw texts. 
+12. Summarization (LLM) 
+o Summarizer receives README + notable files list and returns structured JSON: 
+o { 
+o   "bullets":["cursor-based incremental sync","has migration scripts","unit tests 
+present"], 
+o   "tags":["nodejs","postgres","cursor-sync"], 
+o   "note_files":["src/db/migrations/001_init.sql"] 
+o } 
+13. Signal Extraction (deterministic + heuristic) 
+For Candidate A: 
+o schema_change_depth: 0.8 (presence of migrations, complexity) 
+o rollback_frequency: 0.1 (few rollbacks) 
+o test_coverage_presence: true → tests_present: 1 
+For Candidate B: 
+o rate_limiting_impl: 0.95 
+o benchmarks_present: 0.6 
+o production_experience_evidence: 0.7 
+14. Evaluator prompt (LLM) 
+Provide outcome + task list + signals + summaries + rubric weights. Instruct: return 
+strict JSON (see schema below). LLM returns structured evaluation (or you use 
+deterministic fallback). 
+15. Allocation Engine (weighted scoring) 
+o For task "Schema design": Candidate A score = schema_change_depth*weight + 
+tests_present*weight... → best fit -> Candidate A 
+o For task "Rate limiting": Candidate B best fit. 
+16. Plugin returns structured allocation JSON (example final output): 
+17. { 
+18.   "job_id":"job-001", 
+19.   "fit_score":0.81, 
+20.   "work_allocation":[ 
+21.     {"task":"Schema 
+design","recommended_candidate":"candA","confidence":0.87,"reasons":["authored 
+migrations","unit tests 
+exist"],"evidence":[{"type":"file","ref":"src/db/migrations/001_init.sql","snippet":"CREAT
+E TABLE ..."}]}, 
+22.     {"task":"Rate limiting & 
+middleware","recommended_candidate":"candB","confidence":0.83,"reasons":["token-bucket limiter implemented","benchmark 
+notes"],"evidence":[{"type":"file","ref":"src/middleware/ratelimit.py"}]} 
+23.   ], 
+24.   
+"global_signals_used":["schema_change_depth","rate_limiting_impl","test_presence"], 
+25.   "risk_flags":["No load-testing evidence for payments throughput"], 
+26.   "human_action_required":true 
+27. } 
+28. Human reviewer actions in Frai 
+o Open allocation card for payments-api-v1. 
+o Conduct very focused interviews with Candidate A on schema evolution, 
+Candidate B on rate limiting. 
+o Decide to hire Candidate B as contractor for rate limiting first. 
+29. Post-hire feedback (after 1 month) 
+o Feedback: result: failure (deployment missed deadlines due to poor migration 
+handling) 
+o System logs that schema_change_depth was present but migration handling 
+signal was not predictive; increases weight for rollback_recovery_speed and 
+decreases weight for folder_structure_cleanliness. 
+30. Future effect 
+o The next time a similar outcome is posted, the weights have shifted—system will 
+prioritize candidates with rollback/recovery evidence. 
+3 — Complete Final Path & Step-by-Step Project Plan (every detail) 
+This is the exhaustive plan from today (16th) through shortlisting (18th) to hackathon (31st) and 
+winning. I break it into Pre-Shortlist (immediate), Shortlisting deliverables, Pre-Hackathon 
+(build), Hackathon day (24h), and Post-Hackathon. Each step includes exact tasks, tech 
+requirements, code pieces to implement, prompts, tests, and deliverables. 
+PHASE A — IMMEDIATE: Today (16th) — CLARITY & PREP (2–4 hours) 
+Goal: lock scope and prepare shortlisting materials. 
+Tasks 
+1. Lock project name: SignalLayer (or chosen team name). 
+2. Create GitHub repo signal-layer with initial README and folder structure: /backend, 
+/frontend, /docs, /demo-assets. Initialize main branch. 
+3. Create a short 1–2 page document draft (use later for shortlisting). Include one 
+architecture diagram (simple ASCII or a whitebox PNG). 
+4. Prepare demo artifacts: 
+o Pick/prepare 3 public demo repos (create simple sample repos if needed) and 1 
+sales CSV. 
+o Prepare small failure-case repo (no load tests) for demonstrating learning. 
+5. Draft summarizer + evaluator prompt templates (store in /docs/prompts.md). 
+6. Assign roles & calendar for the team (sprint plan). Confirm availability on 31st. 
+Deliverables by end of day 16th: GitHub repo with skeleton, doc placeholders, 3 demo artifact 
+links, prompts drafts. 
+PHASE B — SHORTLIST SUBMISSION (16th–18th) — Submit by 18th 
+Goal: get shortlisted — deliver judge-friendly doc + optional 1-min demo video. 
+What to include (exact items) 
+1. 1-page Problem Understanding — crisp sentences; include one concrete example 
+(payments-api). 
+2. 2–3 page System Design — include: 
+o High-level architecture diagram (Frai → Plugin → Output → Feedback) 
+o Core primitives (Outcome, Artifact, Signal, Allocation, Feedback) 
+o MVP scope and what will be implemented on hackathon day 
+3. 1-page Execution Plan — what you will build before and during hackathon (be honest). 
+4. Optional: 1-minute screen capture / Figma mock showing outcome→evaluation flow 
+(not required). 
+5. Contact & team roles. 
+How to present 
+ Clear headings, no buzzwords. 
+ Include a brief JSON sample of the plugin output (as shown earlier). 
+ Emphasize plugin architecture and learning loop as non-negotiables. 
+Deliverables: Upload these files to the shortlisting form (PDFs + video link if included). 
+PHASE C — PRE-HACKATHON BUILD (18th–30th): Build core engine incrementally 
+Goal: complete core components so hackathon is for polish & extension. 
+We allot 12 working days — but prioritize core items first (you can condense if prefer). 
+Day-by-day tasks (recommended, parallelize) 
+Day 1 (18th–19th): Backend skeleton & DB 
+ Tech: FastAPI, uvicorn, SQLAlchemy, SQLite (dev)/Postgres (prod) 
+ Implement models: 
+o Outcome, Proof, Evaluation, SignalWeight, Feedback, AuditLog 
+ API skeleton endpoints: 
+o POST /plugin/evaluate 
+o GET /plugin/evaluate/{job_id} 
+o POST /plugin/feedback 
+o GET /health 
+ Add OpenAPI docs (auto via FastAPI) 
+Day 2 (19th–20th): GitHub proof ingestion 
+ Implement fetcher: 
+o Validate repo URL (must be public) 
+o Get README.md, file list, list of top 50 commits, commit authors, file sizes 
+o Save snapshots in snapshots/ and record metadata in DB 
+ Normalize snapshot JSON schema 
+Day 3 (20th–21st): Summarizer & initial signals 
+ Implement summarizer wrapper: 
+o Inputs: README text + notable files snippet 
+o Call LLM (OpenAI) with summarizer prompt -> expects JSON output (bullets, 
+tags, notable_files) 
+ Implement deterministic signals extraction: 
+o tests_present (bool) 
+o migrations_present (bool) 
+o recent_commits_count (int) 
+o average_commit_size (int) 
+o rollback_count_hint (heuristic from commit messages: contains "revert", 
+"rollback", "fix") 
+ Store signals in DB with provenance 
+Day 4 (21st–22nd): Evaluator + JSON schema 
+ Create strict JSON schema for evaluator output: 
+o fields: job_id, fit_score (0-1), scores (map), work_allocation (list of {task, 
+recommended_candidate, reasons[], confidence}), evidence[], risk_flags[], 
+raw_output 
+ Prompt engineering: 
+o Build evaluator prompt with few-shot examples (2 examples) stored in 
+/docs/prompts.md 
+o Implement LLM call wrapper with retries and schema validation 
+ Implement deterministic fallback for invalid LLM output: 
+o Heuristic aggregator that uses signal weights to compute allocation JSON with 
+confidence: low 
+Day 5 (22nd–23rd): Task decomposition & allocation logic 
+ For MVP, allow recruiter to input tasks manually in the Outcome UI. Later add auto
+decompose. 
+ Allocation algorithm: 
+o For each (candidate, task), compute score = sum(signal_value * 
+signal_weight_for_task) 
+o Normalize, return recommended candidate per task with reasons (top 2 
+signals). 
+ Implement basic signal weight defaults (initial weights per task in SignalWeight table) 
+Day 6 (23rd–24th): Feedback endpoint & weight update logic 
+ POST /plugin/feedback payload: 
+ { "job_id":"job-001", "evaluation_id":"eval-123", "result":"success|failure", 
+"metrics":{"retention_months":3,"incidents":2} } 
+ Implement deterministic weight update: 
+o For each signal present in evaluation: 
+ Maintain counters: present_and_success, present_and_failure 
+ If present_and_failure / present_count > 0.6 decrease weight by 10% 
+ If present_and_success / present_count > 0.6 increase weight by 10% 
+o Bound weights to [0.1, 2.0] 
+Day 7 (24th–25th): Frontend basic UI skeleton 
+ Tech: React, Tailwind 
+ Pages: 
+o /outcomes list 
+o /outcomes/create (form: description, tasks, success_criteria, bias) 
+o /outcomes/{id}/submit-proof (paste GitHub URL) 
+o /evaluations/{id} (shows allocation JSON as cards) 
+o /reviewer queue 
+ Connect to backend endpoints, show sample data. 
+Day 8 (25th–26th): Explainability & evidence links 
+ On evaluation page show: 
+o For each allocation card: reasons + evidence snippet + file link (line snippet) 
+ Implement raw LLM prompt/output viewer under admin. 
+Day 9 (26th–27th): Sales artifact parser (one non-dev) 
+ Implement simple CSV parser: 
+o Fields: lead_id, stage, created_at, closed_at, amount, owner 
+o Signals: 
+ conversion_rate = closed / total leads 
+ avg_deal_time = mean(closed_at - created_at) 
+ response_time_estimate (if email lines exist) 
+ Hook into evaluator pipeline: evaluator must accept proof.type and route to appropriate 
+parser. 
+Day 10 (27th–28th): Testing & E2E 
+ Write unit tests for: 
+o schema validation on evaluator output 
+o allocation algorithm (deterministic) 
+o weight update logic 
+ E2E: create 3 canned outcomes, submit 3 proofs each, validate expected allocations. 
+Day 11 (28th–29th): Deployment prep 
+ Deploy backend (Render/Heroku) and frontend (Vercel). Setup env vars for keys. 
+ Ensure CORS, rate-limiting, and logging. 
+Day 12 (29th–30th): Polish and demo rehearsal 
+ Prepare demo script, record backup videos, prepare README & docs. 
+PHASE D — HACKATHON DAY (31st) — 24-hour intensive (hour-by-hour) 
+We assume most heavy lifting is done before. Hackathon day is for polish, feature extension, 
+and the show. 
+Hour 0–1: Reboot sync 
+ Quick standup, assign demo lead, run local smoke test. 
+Hour 1–4: Polish explainability & evidence 
+ Add line references to evidence (show file path & snippet with code lines). 
+ Add "Why this matters" short text in allocation card. 
+Hour 4–8: Enhance learning visibility 
+ Add chart / simple table showing weight changes pre/post feedback. 
+ Add "Simulate feedback" button in reviewer UI to demo weight change quickly. 
+Hour 8–12: Add minor stretch feature (if time) 
+ Auto task decomposition via a short LLM prompt for outcomes (optional). 
+ Or integrate anonymized review toggle. 
+Hour 12–16: UI polish & accessibility 
+ Improve UI colors, buttons, and ensure Frai-style visual coherence. 
+ Ensure mobile/desktop responsiveness. 
+Hour 16–20: Run full demo runs & record final video 
+ Run the exact demo script 3 times, fix timing issues. 
+ Record a polished 2–3 minute demo video; keep raw footage backup. 
+Hour 20–22: Prepare submission assets 
+ Final README, 1-page architecture diagram, 2-page project doc, video, OpenAPI spec. 
+Hour 22–24: Final rehearsal & submission 
+ Final dry-run, split who speaks, upload deliverables, submit. 
+PHASE E — POST-HACKATHON (Follow up) 
+ Prepare post-hack artifacts: full docs, security notes, next steps. 
+ If asked, prepare technical walkthrough and make repo open with recorded demo. 
+4 — Exact Technical Requirements & Code Outline (the essentials) 
+Tech Stack (repeat for clarity) 
+ Frontend: React + Tailwind (Vercel) 
+ Backend: FastAPI + Uvicorn + SQLAlchemy (SQLite/Postgres) 
+ LLM: OpenAI Chat API (GPT-4/GPT-4o-mini) 
+ Storage: Local snapshot folder / S3 if deployed 
+ DB: SQLite (dev) / Postgres (hosted) 
+ Validation: jsonschema 
+ Authentication: simple API key for Frai integration (HMAC or bearer) 
+ Dev: GitHub, Docker optional 
+Important endpoints (exact signatures) 
+1. POST /plugin/evaluate 
+o Request: 
+o { 
+o   "request_id": "uuid", 
+o   "outcome": { 
+o     
+o     
+o     
+o     
+o     
+"id":"string", 
+"title":"string", 
+"description":"string", 
+"tasks":["t1","t2"], 
+"rubric":{"alignment":0.4,"technical":0.4,"completeness":0.2} 
+o   }, 
+o   "proofs":[ 
+o     
+{"candidate_id":"candA","type":"github","payload":{"repo_url":"https://github.co
+m/..."}}... 
+o   ] 
+o } 
+o Response (synchronous allowed for demo): 
+ Returns job_id and evaluation_json (see schema earlier). Or if async, 
+return job_id and poll via GET. 
+2. GET /plugin/evaluate/{job_id} → returns evaluation JSON. 
+3. POST /plugin/feedback 
+o Request: 
+o { 
+o   "job_id":"job-001", 
+o   "evaluation_id":"eval-123", 
+o   "result":"success" | "failure", 
+o   "metrics":{"retention_months":3,"incidents":1} 
+o } 
+o Response: confirmation and any weight updates. 
+4. GET /admin/signal-weights → list of signal weights and history. 
+JSON schema — evaluator output (copy-paste) 
+{ 
+  "type":"object", 
+  "properties":{ 
+    "job_id":{"type":"string"}, 
+    "fit_score":{"type":"number"}, 
+    "work_allocation":{ 
+      "type":"array", 
+      "items":{ 
+        "type":"object", 
+        "properties":{ 
+          "task":{"type":"string"}, 
+          "recommended_candidate":{"type":"string"}, 
+          "confidence":{"type":"number"}, 
+          "reasons":{"type":"array","items":{"type":"string"}}, 
+          "evidence":{"type":"array","items":{"type":"object"}} 
+        }, 
+        "required":["task","recommended_candidate","confidence"] 
+      } 
+    }, 
+"evidence":{"type":"array"}, 
+"risk_flags":{"type":"array"}, 
+"human_action_required":{"type":"boolean"} 
+}, 
+"required":["job_id","fit_score","work_allocation","human_action_required"] 
+} 
+Sample summarizer prompt (starter) 
+System message: 
+"You are a concise code summarizer. Output JSON only." 
+User message: 
+"Repo README: --- [README TEXT] --- Notable files: [list]. Return JSON: { bullets:[3], tags:[3], 
+notable_files:[...], tests_present: true/false }" 
+Sample evaluator prompt (strict) 
+System: 
+"You are an evaluator. Return JSON only per schema. Use the rubric weights provided. If 
+uncertain, set confidence to low and include risk flags." 
+User: 
+Provide explicit example including outcome, tasks, repo summary, list of signals, and ask for 
+JSON. 
+(Include two few-shot examples in docs.) 
+5 — UI / Pages & UX (exact list to implement) 
+1. Login / Frai plugin entry (if integrated) — show plugin in Frai sidebar. 
+2. Outcomes list page — list outcomes with status (open, evaluated, hired). 
+3. Outcome create page — title, description, tasks (manually input), success_criteria, 
+bias weight sliders. 
+4. Submit proof — paste GitHub URL, optional note; preview snapshot of repo (README 
+excerpt, files). 
+5. Evaluation result page — allocation cards per task (candidate, confidence, reasons, 
+evidence snippets), global signals used, risk flags, action buttons (Request follow-up, 
+Advance to human review, Mark hire result). 
+6. Reviewer queue — list of evaluations, filters, anonymize toggle. 
+7. Admin — edit prompts, view signal weights and history, raw LLM output viewer. 
+8. Audit logs — show timeline of actions. 
+6 — Test Plan (must-run tests prior to demo) 
+ Unit tests for JSON schema validation (3 sample responses). 
+ Simulated end-to-end test: outcome→submit→eval→feedback→re-eval. 
+ Evidence link verification: snippets must match actual repo files (line numbers 
+approximate). 
+ Stress: POST /plugin/evaluate with 3 proofs sequentially, ensure no crashing. 
+7 — Deployment & Ops (quick) 
+ Backend: deploy to Render (free tier). Env vars: OPENAI_KEY, GITHUB_TOKEN, 
+DATABASE_URL. 
+ Frontend: deploy to Vercel. Hook to main branch. 
+ Secrets: Never commit keys. Use team-shared secured place. 
+ Logging: stdout to Render; optionally wire to Sentry/LogDNA (not required). 
+8 — Demo Script & Artifacts (exact, timed) 
+2:30–3:00 demo script — who speaks & what to show. 
+ 0:00–0:10 — Team intro (name + one-liner). 
+ 0:10–0:30 — Problem statement & single sentence of solution. 
+ 0:30–0:45 — Show Outcome creation (payments-api v1). 
+ 0:45–1:05 — Submit Candidate A proof (GitHub), show snapshot and summarizer 
+output. 
+ 1:05–1:25 — Submit Candidate B proof (GitHub). 
+ 1:25–1:45 — Show evaluation result: allocation cards for tasks, evidence snippets, risk 
+flags. 
+ 1:45–2:00 — Simulate marking hire failure (click feedback: failure), show weight change 
+in admin (folder_structure weight decreased, rollback_recovery increased). 
+ 2:00–2:15 — Re-run evaluation demo or show allocation changed. 
+ 2:15–2:30 — Closing lines: plugin contract and next steps. 
+Artifacts to upload: repo link, one-page architecture, 2-page doc, unlisted video. 
+9 — Judge Q&A Cheat Sheet (exact short answers) 
+ Q: Does this replace interviews? 
+o A: No — it replaces resume screening and first-round noise; interviews are 
+focused and human decisions remain final. 
+ Q: How do you avoid hallucinations? 
+o A: Every claim maps to artifact provenance (file path, snippet). LLM output must 
+pass JSON schema; otherwise fallback heuristics used and confidence: low. 
+ Q: Why GitHub? 
+o A: GitHub is an initial high-signal artifact source for software roles. The pipeline 
+is artifact-agnostic and supports other artifacts (e.g., CRM CSV for sales) soon. 
+ Q: Is this bias-safe? 
+o A: We do not use demographic signals, we support anonymized review, and we 
+bound recruiter bias (max ±30%). Human overrides exist. 
+ Q: How do you learn? 
+o A: Post-hire feedback updates signal weights deterministically 
+(increase/decrease by 10% bounded). This creates continuous adaptation. 
+10 — Fallbacks & Risk Mitigation (must have) 
+ If LLM unreachable: return cached evaluation JSON for demo repos (mark confidence: 
+low). 
+ If GitHub rate-limited: use local cached snapshots. 
+ If deployment fails: show recorded video & local demo. 
+ If time runs out: ensure evaluation + feedback loop exists; cut admin & non-dev artifact. 
+11 — Winning Checklist (final) 
+Before submission/demo, confirm: 
+ POST /plugin/evaluate works for at least 3 artifacts and returns valid JSON. 
+ Evidence snippets map to actual repo files/snippets. 
+ Feedback API updates signal weights and persisted changes are visible in admin. 
+ UI pages: Outcome create, Submit proof, Evaluation result, Reviewer queue function. 
+ Demo video recorded and unlisted; backup local recordings saved. 
+ 2-page project doc + 1-page architecture ready. 
+ Team roles & demo script practiced; speakers assigned. 
+ Shortlisting doc submitted by 18th. 
+12 — Final practical deliverables I can generate for you now (pick 1 or more) 
+If you want, I will produce any of the following immediately (copy-paste ready): 
+ A. Shortlisting-ready 2–3 page PDF document (text + architecture diagram). 
+ B. FastAPI backend skeleton (file contents for main.py, models, and endpoints). 
+ C. React page skeletons (JSX code for OutcomeCreate, ProofSubmit, EvaluationView). 
+ D. Evaluator & Summarizer prompt templates + 3 few-shot examples + JSON 
+schema file. 
+ E. Demo script in speaker-by-speaker lines (exact wording and timings). 
+ F. One-page judge Q&A cheat-sheet (printable). 
+Tell me which of A–F to generate first and I’ll produce it immediately. 
+this is fine but i have another doubt regarding,will it read the code snippets and structure ? 
+Yes — it can read code snippets and project structure, but how it does that (and how much) 
+is very important for correctness, feasibility, and judge acceptance. 
+I’ll explain this precisely, in three layers: 
+1. What the system actually reads today (MVP-safe) 
+2. How it reads structure vs code (mechanically) 
+3. What it deliberately does NOT try to do (and why) 
+No hype, no hand-waving. 
+Does the system read code snippets? 
+Yes — but selectively and purposefully 
+The system does not “understand” all code line-by-line like a human. 
+Instead, it reads targeted snippets to extract signals. 
+What it reads (examples) 
+From a GitHub repo, the system fetches: 
+ README.md (primary intent & scope) 
+ File tree (structure) 
+ Selected files based on heuristics, e.g.: 
+o migrations/*.sql 
+o schema.ts, models.py 
+o middleware/* 
+o Dockerfile 
+o tests/* 
+ Commit messages and metadata 
+Then it reads snippets, not entire files. 
+Example snippet read: 
+CREATE TABLE payments ( 
+id UUID PRIMARY KEY, 
+amount INT NOT NULL, 
+status VARCHAR(20), 
+created_at TIMESTAMP 
+); 
+From this snippet, it extracts signals like: 
+ schema presence 
+ normalization hints 
+ migration ownership 
+Does it understand project structure? 
+Yes — structure is one of the strongest signals 
+Project structure is read via the file tree, not deep parsing. 
+What structure signals are extracted 
+From the repository tree, the system extracts: 
+ Presence of layered architecture: 
+o controllers/ 
+o services/ 
+o repositories/ 
+ Separation of concerns 
+ Test directory presence 
+ CI/CD files (.github/workflows) 
+ Containerization (Dockerfile) 
+ Config hygiene (env.example, .gitignore) 
+Example structure: 
+src/ 
+├── controllers/ 
+├── services/ 
+├── db/ 
+│    └── migrations/ 
+├── middleware/ 
+├── tests/ 
+Dockerfile 
+This produces signals like: 
+ layered_architecture = true 
+ tests_present = true 
+ container_ready = true 
+These are binary or weighted signals, not opinions. 
+How code is actually processed (important) 
+Three-step approach (this is key) 
+Step 1 — Deterministic scanning (no AI) 
+ File names 
+ Directory layout 
+ File extensions 
+ Commit metadata 
+This is fast, reliable, and explainable. 
+Step 2 — Targeted snippet extraction 
+Instead of reading entire files: 
+ Extract top N lines 
+ Extract function signatures 
+ Extract migration definitions 
+ Extract config blocks 
+This keeps cost low and avoids hallucination. 
+Step 3 — Controlled LLM summarization 
+LLMs are used only to: 
+ Summarize what a snippet is doing 
+ Classify pattern presence 
+Example prompt: 
+“Given this middleware snippet, does it implement rate limiting? Answer yes/no and why.” 
+The LLM is not allowed to: 
+ Rewrite code 
+ Infer behavior beyond snippet 
+ Make hiring decisions 
+What the system explicitly does NOT try to do 
+This is very important — and judges will respect this. 
+It does NOT: 
+ Run the code 
+ Compile the code 
+ Execute tests 
+ Prove correctness 
+ Detect bugs exhaustively 
+ Replace code reviews 
+Why? 
+Because that would: 
+ Be infeasible in a hackathon 
+ Create false confidence 
+ Violate explainability 
+How this maps to your signals (example) 
+Outcome: 
+“Ability to build scalable REST APIs in Node.js” 
+Signals extracted: 
+ Presence of router/controller files 
+ Middleware pattern detected 
+ Pagination logic in handlers 
+ Rate limiting middleware snippet 
+ Commit history shows incremental refactors 
+Evidence shown to reviewer: 
+“Detected rate limiting via token bucket implementation in middleware/ratelimit.js (lines 12
+48).” 
+This is credible, explainable, and safe. 
+What happens if the repo is huge? 
+Good question. 
+Strategy: 
+ Limit files scanned per category 
+ Prioritize: 
+o code paths referenced in README 
+o recent commits 
+o core directories (src/, app/) 
+If the repo is massive: 
+ The system marks: 
+o confidence: medium 
+o Adds a risk_flag: "Partial code coverage" 
+This honesty scores points, not loses them. 
+What to say if a judge asks: 
+“Does your AI read the code?” 
+Answer exactly this: 
+“Yes, but selectively. We extract structural signals and targeted code snippets to infer 
+capability, not to fully understand or execute the code. All conclusions are backed by specific 
+file references.” 
+That answer is technically correct and defensible. 
+Why this is the right design choice 
+  
+  
+  
+  
+Feasible in 24 hours 
+Explainable 
+Cost-controlled 
+Avoids hallucination 
+  
+Aligns with AI-native principles 
+Trying to “understand all code” would be a red flag. 
+Final takeaway (lock this) 
+The system reads structure first, snippets second, and uses AI only to summarize—not to 
+decide. 
+That single sentence captures the entire philosophy. 
