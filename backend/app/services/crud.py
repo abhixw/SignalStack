@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-import models, schemas
+from app.models import models
+from app.schemas import schemas
 import json
 
 def get_outcome(db: Session, outcome_id: str):

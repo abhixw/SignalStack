@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, JSON, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from database import Base
+from app.config.database import Base # Adjusted import
 import datetime
 
 class Outcome(Base):
