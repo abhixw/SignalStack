@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.database import engine
-from app.models import models
-from app.routes import api
+import app.models as models
+# from app.routes import api
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
@@ -29,7 +29,14 @@ async def debug_exception_handler(request, exc):
         content={"message": str(exc)},
     )
 
-app.include_router(api.router)
+from app.routes import outcome, task_decomposer, signal_extractor, evaluator, feedback
+
+# Pipeline Routers
+app.include_router(outcome.router)
+app.include_router(task_decomposer.router)
+app.include_router(signal_extractor.router)
+app.include_router(evaluator.router)
+app.include_router(feedback.router)
 
 if __name__ == "__main__":
     import uvicorn

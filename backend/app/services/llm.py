@@ -1,7 +1,7 @@
 import google.generativeai as genai
 from typing import List, Dict, Any
 from app.config.config import config
-from app.schemas.schemas import ProofCreate, OutcomeCreate
+import app.schemas as schemas
 
 class GeminiLLMService:
     def __init__(self):
@@ -13,7 +13,7 @@ class GeminiLLMService:
             # Use gemini-2.5-flash-lite for best rate limits (10 RPM)
             self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
 
-    def summarize(self, proof: ProofCreate) -> Dict[str, Any]:
+    def summarize(self, proof: schemas.ProofCreate) -> Dict[str, Any]:
         if not self.api_key:
             return {"summary": "Gemini API Key missing. Using mock summary."}
         
@@ -41,7 +41,7 @@ class GeminiLLMService:
             print(f"Gemini Error: {e}")
             return {"summary": "Error generating summary via Gemini."}
 
-    def evaluate_allocation(self, outcome: OutcomeCreate, enriched_proofs: List[Dict], signals_map: Dict[str, Dict]) -> Dict[str, Any]:
+    def evaluate_allocation(self, outcome: schemas.OutcomeCreate, enriched_proofs: List[Dict], signals_map: Dict[str, Dict]) -> Dict[str, Any]:
         if not self.api_key:
             return None
 
