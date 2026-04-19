@@ -1,5 +1,5 @@
 from typing import List
-from app.services.llm import GeminiLLMService as LLMService
+from app.services.llm import GroqLLMService as LLMService
 import app.schemas as schemas
 
 class TaskDecomposer:

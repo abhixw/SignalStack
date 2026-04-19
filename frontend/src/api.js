@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export async function createOutcome(outcome) {
     const response = await fetch(`${API_URL}/outcomes`, {
@@ -104,6 +104,18 @@ export const getRepoPreview = async (repoUrl) => {
 export async function getAuditLogs() {
     const response = await fetch(`${API_URL}/admin/audit-logs`);
     if (!response.ok) throw new Error("Failed to fetch audit logs");
+    return response.json();
+}
+
+export async function getCandidateJobs() {
+    const response = await fetch(`${API_URL}/candidate/jobs`);
+    if (!response.ok) throw new Error("Failed to fetch candidate jobs");
+    return response.json();
+}
+
+export async function getCandidateApplications(candidateId) {
+    const response = await fetch(`${API_URL}/candidate/my-applications/${candidateId}`);
+    if (!response.ok) throw new Error("Failed to fetch candidate applications");
     return response.json();
 }
 

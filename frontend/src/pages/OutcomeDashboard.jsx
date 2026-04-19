@@ -95,35 +95,6 @@ export default function OutcomeDashboard() {
                 </div>
             </div>
 
-            {/* Invite Candidates */}
-            <div className="bg-white shadow-sm rounded-xl p-8 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Share2 className="w-5 h-5 text-indigo-600" />
-                    Invite Candidates
-                </h3>
-                <p className="text-gray-600 mb-6 text-sm">
-                    Share this secure link with candidates. They will submit proof of work directly against your defined outcome.
-                </p>
-
-                <div className="flex gap-2 max-w-2xl">
-                    <div className="relative flex-grow">
-                        <input
-                            type="text"
-                            readOnly
-                            value={candidateLink}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border bg-gray-50 text-gray-600"
-                        />
-                    </div>
-                    <button
-                        onClick={handleCopyLink}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                        {copied ? <CheckCircle className="w-4 h-4 mr-2 text-green-500" /> : <Copy className="w-4 h-4 mr-2" />}
-                        {copied ? 'Copied' : 'Copy Link'}
-                    </button>
-                </div>
-            </div>
-
             {/* Submitted Proofs List */}
             <div className="bg-white shadow-sm rounded-xl p-8 border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Submitted Proofs ({proofs.length})</h3>

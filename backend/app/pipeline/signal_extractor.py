@@ -15,7 +15,8 @@ class SignalExtractor:
         signals = {"valid_repo": 1.0}
         files, _ = self.github.get_recursive_tree(repo_url)
         
-        # ===== CORE SIGNALS =====
+        if not files:
+             return signals
         # 1. Test Presence
         has_tests = any("test" in f.lower() or "spec" in f.lower() for f in files)
         signals["tests_present"] = 1.0 if has_tests else 0.0

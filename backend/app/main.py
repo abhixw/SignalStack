@@ -29,7 +29,7 @@ async def debug_exception_handler(request, exc):
         content={"message": str(exc)},
     )
 
-from app.routes import outcome, task_decomposer, signal_extractor, evaluator, feedback
+from app.routes import outcome, task_decomposer, signal_extractor, evaluator, feedback, candidate
 
 # Pipeline Routers
 app.include_router(outcome.router)
@@ -37,6 +37,7 @@ app.include_router(task_decomposer.router)
 app.include_router(signal_extractor.router)
 app.include_router(evaluator.router)
 app.include_router(feedback.router)
+app.include_router(candidate.router)
 
 if __name__ == "__main__":
     import uvicorn

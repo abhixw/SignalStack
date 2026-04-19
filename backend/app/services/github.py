@@ -33,6 +33,10 @@ class GitHubService:
         
         try:
             response = session.get(url, headers=self.headers)
+            if response.status_code == 403 and "rate limit" in response.text.lower():
+                print(f"CRITICAL: GitHub API Rate Limit Exceeded for {url}")
+                # We can't really do much here without a token
+            
             if response.status_code in [401, 403, 404] and self.token:
                 # Try without token (in case token is invalid or rate limited but public access works)
                 print(f"Request failed with {response.status_code}. Retrying without token...")

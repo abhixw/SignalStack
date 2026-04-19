@@ -25,6 +25,7 @@ class EvaluationResponse(BaseModel):
     job_id: str
     fit_score: float
     work_allocation: List[WorkAllocation]
+    candidate_scores: Dict[str, float] = {}
     global_signals_used: List[str]
     risk_flags: List[str]
     human_action_required: bool

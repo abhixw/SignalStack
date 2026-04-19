@@ -82,32 +82,30 @@ export default function EvaluationView() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-12">
-            {/* A. Evaluation Header */}
-            <div className="bg-white shadow-sm rounded-xl p-8 border border-gray-100 flex justify-between items-start">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Evaluation Result</h1>
-                    <p className="text-gray-500 mt-1 font-mono text-sm">Job ID: {evaluation.job_id}</p>
-
-                    {anonymized && (
-                        <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            <Shield className="w-3 h-3 mr-1" /> Anonymized Mode
+            <div className="bg-white shadow-sm rounded-xl p-8 border border-gray-100">
+                <div className="flex justify-between items-start mb-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">Evaluation Report</h1>
+                        <p className="text-gray-500 mt-1 font-mono text-sm">Job ID: {evaluation.job_id}</p>
+                    </div>
+                    {evaluation.risk_flags.length > 0 && (
+                        <div className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4" /> {evaluation.risk_flags.length} Risks Detected
                         </div>
                     )}
-
-                    <div className="mt-4 flex gap-4">
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${evaluation.fit_score > 0.8 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                            Confidence: {evaluation.fit_score > 0.8 ? 'High' : 'Medium'}
-                        </div>
-                        {evaluation.risk_flags.length > 0 && (
-                            <div className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 flex items-center gap-1">
-                                <AlertTriangle className="w-4 h-4" /> {evaluation.risk_flags.length} Risks Detected
-                            </div>
-                        )}
-                    </div>
                 </div>
-                <div className="text-right">
-                    <div className="text-sm text-gray-500 uppercase tracking-wide font-semibold">Overall Fit</div>
-                    <div className="text-5xl font-bold text-indigo-600">{(evaluation.fit_score * 100).toFixed(0)}%</div>
+
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Candidate Leaderboard</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Object.entries(evaluation.candidate_scores || {}).map(([candId, score]) => (
+                        <div key={candId} className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex flex-col items-center">
+                            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
+                                <User className="h-5 w-5 text-indigo-600" />
+                            </div>
+                            <div className="text-sm font-medium text-gray-900 truncate w-full text-center">{candId}</div>
+                            <div className="text-2xl font-bold text-indigo-600 mt-1">{(score * 100).toFixed(0)}%</div>
+                        </div>
+                    ))}
                 </div>
             </div>
 

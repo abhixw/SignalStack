@@ -1,21 +1,23 @@
-import google.generativeai as genai
+from groq import Groq
 from typing import List, Dict, Any
+import json
 from app.config.config import config
 import app.schemas as schemas
 
-class GeminiLLMService:
+class GroqLLMService:
     def __init__(self):
-        self.api_key = config.GEMINI_API_KEY
+        self.api_key = config.GROQ_API_KEY
         if not self.api_key:
-            print("Warning: GEMINI_API_KEY not found in environment variables.")
+            print("Warning: GROQ_API_KEY not found in environment variables.")
+            self.client = None
         else:
-            genai.configure(api_key=self.api_key)
-            # Use gemini-2.5-flash-lite for best rate limits (10 RPM)
-            self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
+            self.client = Groq(api_key=self.api_key)
+            # Use llama3-70b-8192 for high quality and speed
+            self.model = "llama3-70b-8192"
 
     def summarize(self, proof: schemas.ProofCreate) -> Dict[str, Any]:
-        if not self.api_key:
-            return {"summary": "Gemini API Key missing. Using mock summary."}
+        if not self.client:
+            return {"summary": "Groq API Key missing. Using mock summary."}
         
         try:
             prompt = f"""
@@ -30,19 +32,25 @@ class GeminiLLMService:
                 "complexity": "Low/Medium/High"
             }}
             """
-            response = self.model.generate_content(prompt)
-            try:
-                import json
-                text = response.text.replace('```json', '').replace('```', '').strip()
-                return json.loads(text)
-            except:
-                return {"summary": response.text, "raw": True}
+            
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model=self.model,
+                response_format={"type": "json_object"}
+            )
+            
+            return json.loads(chat_completion.choices[0].message.content)
         except Exception as e:
-            print(f"Gemini Error: {e}")
-            return {"summary": "Error generating summary via Gemini."}
+            print(f"Groq Error: {e}")
+            return {"summary": "Error generating summary via Groq."}
 
     def evaluate_allocation(self, outcome: schemas.OutcomeCreate, enriched_proofs: List[Dict], signals_map: Dict[str, Dict]) -> Dict[str, Any]:
-        if not self.api_key:
+        if not self.client:
             return None
 
         try:
@@ -90,10 +98,18 @@ class GeminiLLMService:
             }}
             """
             
-            response = self.model.generate_content(prompt)
-            text = response.text.replace('```json', '').replace('```', '').strip()
-            import json
-            return json.loads(text)
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model=self.model,
+                response_format={"type": "json_object"}
+            )
+            
+            return json.loads(chat_completion.choices[0].message.content)
         except Exception as e:
             print(f"LLM Evaluation Error: {e}")
             return None
@@ -201,8 +217,8 @@ class GeminiLLMService:
             
             return final_tasks
 
-        if not self.api_key:
-            print("No API Key found, using fallback.")
+        if not self.client:
+            print("No Groq client found, using fallback.")
             return get_fallback_tasks(description)
 
         try:
@@ -242,19 +258,27 @@ class GeminiLLMService:
                 }}
             ]
             """
-            response = self.model.generate_content(prompt)
-            text = response.text.replace('```json', '').replace('```', '').strip()
+            
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model=self.model,
+                response_format={"type": "json_object"}
+            )
+            
+            text = chat_completion.choices[0].message.content
             
             # Robust JSON parsing
             start = text.find('[')
             end = text.rfind(']') + 1
             if start != -1 and end != -1:
                 text = text[start:end]
-                
-            import json
+            
             return json.loads(text)
         except Exception as e:
             print(f"LLM Task Generation Error: {e}")
-            if 'response' in locals():
-                print(f"Raw Response: {response.text}")
             return get_fallback_tasks(description)

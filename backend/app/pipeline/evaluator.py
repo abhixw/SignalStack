@@ -11,6 +11,8 @@ class Evaluator:
         self.extractor = SignalExtractor()
 
     def evaluate(self, outcome: schemas.OutcomeCreate, proofs: List[schemas.ProofCreate], signals_map: Dict[str, Dict]) -> schemas.EvaluationResponse:
+        candidate_total_scores = {p.candidate_id: 0.0 for p in proofs}
+        task_count = len(outcome.tasks)
         allocations = []
         global_signals_used = set()
         
@@ -27,6 +29,7 @@ class Evaluator:
                 
                 # Calculate task-specific score
                 score = self.matcher.calculate_task_score(task.title, signals)
+                candidate_total_scores[cand_id] += score
                 
                 # Track which signals we used
                 for signal_name in self.matcher._get_task_signals(task.title):
@@ -36,14 +39,11 @@ class Evaluator:
                     best_score = score
                     best_candidate = cand_id
             
-            # Generate reasons based on matched signals
+            # ... (rest of task logic remains same) ...
             if best_candidate and best_candidate in signals_map:
                 candidate_signals = signals_map[best_candidate]
                 reasons = self.matcher.get_matched_reason(task.title, candidate_signals)
                 
-                # Extract evidence (Re-using extractor for evidence specifically)
-                # Ideally proof should contain repo_url
-                # We need to find the proof object for the best candidate
                 best_proof = next((p for p in proofs if p.candidate_id == best_candidate), None)
                 if best_proof:
                      repo_url = best_proof.payload.get("repo_url", "")
@@ -54,7 +54,13 @@ class Evaluator:
                 task, best_candidate, best_score, reasons, evidence
             ))
 
-        # Calculate overall fit score
+        # Calculate per-candidate overall scores
+        candidate_scores = {
+            cand_id: round(total / task_count, 2) if task_count > 0 else 0.0 
+            for cand_id, total in candidate_total_scores.items()
+        }
+
+        # Calculate overall fit score (average of allocations)
         avg_confidence = 0.0
         if allocations:
             avg_confidence = sum(a.confidence for a in allocations) / len(allocations)
@@ -63,6 +69,7 @@ class Evaluator:
             job_id=outcome.id,
             fit_score=round(avg_confidence, 2),
             work_allocation=allocations,
+            candidate_scores=candidate_scores,
             global_signals_used=list(global_signals_used),
             risk_flags=[],
             human_action_required=True

@@ -24,6 +24,13 @@ export default function ProofSubmit() {
             try {
                 const data = await getOutcome(outcomeId);
                 setOutcome(data);
+
+                // Pre-fill candidate ID from URL if present
+                const params = new URLSearchParams(window.location.search);
+                const cid = params.get('candidateId');
+                if (cid) {
+                    setFormData(prev => ({ ...prev, candidate_id: cid }));
+                }
             } catch (error) {
                 console.error("Failed to load outcome", error);
             } finally {

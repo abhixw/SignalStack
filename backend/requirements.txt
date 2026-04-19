@@ -1,3 +1,5 @@
+gunicorn
+psycopg2-binary
 fastapi
 uvicorn
 sqlalchemy
@@ -5,4 +7,5 @@ pydantic
 python-multipart
 requests
 google-generativeai
+groq
 python-dotenv
