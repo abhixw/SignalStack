@@ -8,11 +8,11 @@ __pycache__/
 .env.local
 .env.*.local
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-sql_app*.db
+# Database files (Uncommented so user can push their existing SQLite DB)
+# *.db
+# *.sqlite
+# *.sqlite3
+# sql_app*.db
 
 # Virtual environments
 venv/
