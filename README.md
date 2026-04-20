@@ -23,7 +23,7 @@
 
 ### Technical Features
 - **Signal Extraction** - Detects ML models, web frameworks, tests, deployment artifacts
-- **LLM-Powered Evaluation** - Uses Gemini 2.5 Flash for intelligent analysis
+- **LLM-Powered Evaluation** - Uses Groq llama3-70b-8192 for intelligent analysis
 - **Audit Logging** - Full transparency of all system actions
 - **System Learning** - Weights adjust based on feedback
 
@@ -53,7 +53,7 @@
 - Python 3.10+
 - Node.js 18+
 - GitHub Token (for repo analysis)
-- Gemini API Key (for AI features)
+- Groq API Key (for AI features)
 
 ### Backend Setup
 
@@ -71,7 +71,7 @@ pip install -r requirements.txt
 # Configure environment
 cp .env.example .env
 # Edit .env with your API keys:
-# GEMINI_API_KEY=your_key_here
+# GROQ_API_KEY=your_key_here
 # GITHUB_TOKEN=your_token_here
 
 # Run server
@@ -135,7 +135,7 @@ npm run dev
 | Frontend | React 18, Vite, Lucide Icons |
 | Backend | FastAPI, SQLAlchemy, Pydantic |
 | Database | SQLite (dev), PostgreSQL (prod-ready) |
-| AI/ML | Google Gemini 2.5 Flash, GitHub API |
+| AI/ML | Groq llama3-70b-8192 , GitHub API |
 | Auth | JWT (planned) |
 
 ---
