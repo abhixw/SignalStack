@@ -167,7 +167,7 @@ SignalStack/
 Create a `.env` file in the `backend/` directory:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 GITHUB_TOKEN=your_github_personal_access_token
 ```
 
