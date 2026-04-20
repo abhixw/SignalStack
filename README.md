@@ -203,7 +203,7 @@ GITHUB_TOKEN=your_github_personal_access_token
 
 ## 👥 Team
 
-Built for Hackathon 2026 by Chinmai S D
+Built for Hackathon 2026.
 
 ---
 
@@ -215,6 +215,6 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- Google Gemini API for AI capabilities
+- Groq API for AI capabilities
 - FastAPI for the excellent Python framework
 - React team for the frontend framework
