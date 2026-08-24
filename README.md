@@ -1,8 +1,8 @@
-# 🚀 SignalStack - AI-Native Hiring Platform
+# 🚀 SignaXAI - AI-Native Hiring Platform
 
-**SignalStack** is an AI-powered hiring platform that evaluates candidates based on real work artifacts (GitHub repositories) rather than resumes. It uses advanced signal extraction, LLM-powered analysis, and transparent scoring to match candidates to job outcomes.
+**SignaXAI** is an AI-powered hiring platform that evaluates candidates based on real work artifacts (GitHub repositories) rather than resumes. It uses advanced signal extraction, LLM-powered analysis, and transparent scoring to match candidates to job outcomes.
 
-![SignalStack Demo](https://img.shields.io/badge/Status-Hackathon%20Ready-brightgreen)
+![SignaXAI Demo](https://img.shields.io/badge/Status-Hackathon%20Ready-brightgreen)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![React](https://img.shields.io/badge/React-18+-61DAFB)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688)
