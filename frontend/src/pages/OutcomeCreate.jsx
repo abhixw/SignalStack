@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Save, Sparkles } from 'lucide-react';
 import { createOutcome, suggestTasks } from '../api';
+import { JOB_ROLES } from '../constants';
 
 export default function OutcomeCreate() {
     const navigate = useNavigate();
@@ -13,7 +14,8 @@ export default function OutcomeCreate() {
         tasks: [
             { task_id: 't1', title: '', success_criteria: { outcome: '' }, importance: 'High' }
         ],
-        rubric: { reliability: 0.4, technical_depth: 0.4, completeness: 0.2 }
+        rubric: { reliability: 0.4, technical_depth: 0.4, completeness: 0.2 },
+        job_role: '',
     });
 
     const addTask = () => {
@@ -68,7 +70,7 @@ export default function OutcomeCreate() {
         setLoading(true);
         try {
             // Auto-generate ID if empty
-            const payload = { ...formData };
+            const payload = { ...formData, job_role: formData.job_role || null };
             if (!payload.id) {
                 payload.id = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             }
@@ -118,6 +120,22 @@ export default function OutcomeCreate() {
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border"
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Job Role</label>
+                        <select
+                            value={formData.job_role}
+                            onChange={(e) => setFormData({ ...formData, job_role: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border"
+                        >
+                            <option value="">No role set</option>
+                            {JOB_ROLES.map((role) => (
+                                <option key={role} value={role}>{role}</option>
+                            ))}
+                        </select>
+                        <p className="mt-1.5 text-xs text-gray-500">
+                            Candidates can filter job postings by this. Leaving it unset means this posting only shows up when candidates aren't filtering by a role.
+                        </p>
                     </div>
                 </div>
             </div>

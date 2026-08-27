@@ -1,19 +1,54 @@
-from groq import Groq
+import logging
+from groq import (
+    Groq,
+    APIConnectionError,
+    APITimeoutError,
+    AuthenticationError,
+    RateLimitError,
+    GroqError,
+)
 from typing import List, Dict, Any
 import json
 from app.config.config import config
+from app.services.errors import (
+    UpstreamServiceError,
+    AUTH_FAILURE,
+    RATE_LIMIT,
+    TIMEOUT,
+    MALFORMED_RESPONSE,
+    UPSTREAM_SERVICE_ERROR,
+)
 import app.schemas as schemas
+
+logger = logging.getLogger("signalstack.llm")
+
+
+def _categorize_groq_error(e: Exception) -> UpstreamServiceError:
+    if isinstance(e, AuthenticationError):
+        return UpstreamServiceError("groq", AUTH_FAILURE, "AI service authentication failed.", retryable=False)
+    if isinstance(e, RateLimitError):
+        return UpstreamServiceError("groq", RATE_LIMIT, "AI service rate limit exceeded. Please try again shortly.", retryable=True, status_code=429)
+    if isinstance(e, APITimeoutError):
+        return UpstreamServiceError("groq", TIMEOUT, "AI service did not respond in time.", retryable=True, status_code=504)
+    if isinstance(e, APIConnectionError):
+        return UpstreamServiceError("groq", UPSTREAM_SERVICE_ERROR, "Could not reach the AI service.", retryable=True)
+    if isinstance(e, (json.JSONDecodeError, KeyError)):
+        return UpstreamServiceError("groq", MALFORMED_RESPONSE, "AI service returned an unexpected response.", retryable=True)
+    if isinstance(e, GroqError):
+        return UpstreamServiceError("groq", UPSTREAM_SERVICE_ERROR, "AI service request failed.", retryable=True)
+    return UpstreamServiceError("groq", UPSTREAM_SERVICE_ERROR, "AI service request failed.", retryable=True)
+
 
 class GroqLLMService:
     def __init__(self):
         self.api_key = config.GROQ_API_KEY
         if not self.api_key:
-            print("Warning: GROQ_API_KEY not found in environment variables.")
+            logger.warning("GROQ_API_KEY not found in environment variables.")
             self.client = None
         else:
             self.client = Groq(api_key=self.api_key)
-            # Use llama3-70b-8192 for high quality and speed
-            self.model = "llama3-70b-8192"
+            # llama3-70b-8192 was decommissioned by Groq (May 2025); gpt-oss-120b is the current closest replacement
+            self.model = "openai/gpt-oss-120b"
 
     def summarize(self, proof: schemas.ProofCreate) -> Dict[str, Any]:
         if not self.client:
@@ -46,7 +81,7 @@ class GroqLLMService:
             
             return json.loads(chat_completion.choices[0].message.content)
         except Exception as e:
-            print(f"Groq Error: {e}")
+            logger.warning("Groq summarize error: %s", e)
             return {"summary": "Error generating summary via Groq."}
 
     def evaluate_allocation(self, outcome: schemas.OutcomeCreate, enriched_proofs: List[Dict], signals_map: Dict[str, Dict]) -> Dict[str, Any]:
@@ -111,13 +146,13 @@ class GroqLLMService:
             
             return json.loads(chat_completion.choices[0].message.content)
         except Exception as e:
-            print(f"LLM Evaluation Error: {e}")
+            logger.warning("Groq evaluate_allocation error: %s", e)
             return None
 
     def generate_tasks(self, description: str) -> List[Dict[str, Any]]:
         # Smart Fallback Logic v2 (Principal Engineer Persona)
         def get_fallback_tasks(desc: str):
-            print(f"Triggering Smart Fallback v2 for: {desc[:50]}...")
+            logger.info("Using rule-based task fallback for: %s...", desc[:50])
             tasks = []
             desc_lower = desc.lower()
             
@@ -218,7 +253,7 @@ class GroqLLMService:
             return final_tasks
 
         if not self.client:
-            print("No Groq client found, using fallback.")
+            logger.warning("GROQ_API_KEY not configured — using rule-based task fallback.")
             return get_fallback_tasks(description)
 
         try:
@@ -280,5 +315,9 @@ class GroqLLMService:
             
             return json.loads(text)
         except Exception as e:
-            print(f"LLM Task Generation Error: {e}")
-            return get_fallback_tasks(description)
+            categorized = _categorize_groq_error(e)
+            logger.warning("LLM task generation failed: %s", categorized.to_dict())
+            if config.DEMO_MODE:
+                # Explicit demo/dev mode: degrade to the rule-based generator instead of erroring.
+                return get_fallback_tasks(description)
+            raise categorized

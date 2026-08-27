@@ -1,11 +1,20 @@
 {
-    "routes": [
+    "rewrites": [
         {
-            "handle": "filesystem"
+            "source": "/jobs/:path*",
+            "destination": "https://YOUR-BACKEND-DOMAIN.onrender.com/jobs/:path*"
         },
         {
-            "src": "/(.*)",
-            "dest": "/index.html"
+            "source": "/robots.txt",
+            "destination": "https://YOUR-BACKEND-DOMAIN.onrender.com/robots.txt"
+        },
+        {
+            "source": "/sitemap.xml",
+            "destination": "https://YOUR-BACKEND-DOMAIN.onrender.com/sitemap.xml"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }

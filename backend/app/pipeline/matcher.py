@@ -38,6 +38,18 @@ class Matcher:
             "business": ["web_framework", "tests_present"],
             "logic": ["web_framework", "tests_present"],
             "core": ["web_framework", "tests_present"],
+
+            # DSA / competitive-programming tasks — scored from Codeforces/
+            # LeetCode (see app/services/dsa_signals.py), not from the repo.
+            "dsa": ["dsa_proficiency"],
+            "algorithm": ["dsa_proficiency"],
+            "algorithms": ["dsa_proficiency"],
+            "data structure": ["dsa_proficiency"],
+            "data structures": ["dsa_proficiency"],
+            "competitive programming": ["dsa_proficiency"],
+            "problem solving": ["dsa_proficiency"],
+            "leetcode": ["dsa_proficiency"],
+            "codeforces": ["dsa_proficiency"],
         }
 
     def _get_task_signals(self, task_title: str) -> List[str]:
@@ -83,7 +95,9 @@ class Matcher:
              reason_parts.append("Deployment artifacts found")
          if signals.get("tests_present"):
              reason_parts.append("Tests present")
-         
+         if signals.get("dsa_proficiency"):
+             reason_parts.append("Codeforces/LeetCode activity found")
+
          if reason_parts:
              return [", ".join(reason_parts)]
          else:

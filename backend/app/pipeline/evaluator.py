@@ -12,33 +12,42 @@ class Evaluator:
 
     def evaluate(self, outcome: schemas.OutcomeCreate, proofs: List[schemas.ProofCreate], signals_map: Dict[str, Dict]) -> schemas.EvaluationResponse:
         candidate_total_scores = {p.candidate_id: 0.0 for p in proofs}
+        # Every candidate's score against every task, not just who won each one —
+        # this is what powers the per-candidate task-by-task breakdown.
+        candidate_task_scores: Dict[str, List[schemas.TaskScore]] = {p.candidate_id: [] for p in proofs}
         task_count = len(outcome.tasks)
         allocations = []
         global_signals_used = set()
-        
+
         for task in outcome.tasks:
             best_candidate = None
             best_score = 0.0
             reasons = []
             evidence = []
-            
+
             # Find best candidate based on signals
             for proof in proofs:
                 cand_id = proof.candidate_id
                 signals = signals_map.get(cand_id, {})
-                
+
                 # Calculate task-specific score
                 score = self.matcher.calculate_task_score(task.title, signals)
                 candidate_total_scores[cand_id] += score
-                
+                candidate_task_scores[cand_id].append(schemas.TaskScore(
+                    task_id=task.task_id,
+                    task_title=task.title,
+                    score=round(score, 2),
+                    reasons=self.matcher.get_matched_reason(task.title, signals),
+                ))
+
                 # Track which signals we used
                 for signal_name in self.matcher._get_task_signals(task.title):
                     global_signals_used.add(signal_name)
-                
+
                 if score > best_score:
                     best_score = score
                     best_candidate = cand_id
-            
+
             # ... (rest of task logic remains same) ...
             if best_candidate and best_candidate in signals_map:
                 candidate_signals = signals_map[best_candidate]
@@ -70,6 +79,7 @@ class Evaluator:
             fit_score=round(avg_confidence, 2),
             work_allocation=allocations,
             candidate_scores=candidate_scores,
+            candidate_task_scores=candidate_task_scores,
             global_signals_used=list(global_signals_used),
             risk_flags=[],
             human_action_required=True

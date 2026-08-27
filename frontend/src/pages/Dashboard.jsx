@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, ChevronRight, Activity, Users, CheckCircle } from 'lucide-react';
-import { getOutcomes } from '../api';
+import { getMyOutcomes } from '../api';
 
 export default function Dashboard() {
     const [outcomes, setOutcomes] = useState([]);
@@ -10,7 +10,7 @@ export default function Dashboard() {
     useEffect(() => {
         async function loadOutcomes() {
             try {
-                const data = await getOutcomes();
+                const data = await getMyOutcomes();
                 setOutcomes(data);
             } catch (error) {
                 console.error("Failed to load outcomes", error);

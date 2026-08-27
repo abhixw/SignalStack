@@ -8,11 +8,13 @@ __pycache__/
 .env.local
 .env.*.local
 
-# Database files (Uncommented so user can push their existing SQLite DB)
-# *.db
-# *.sqlite
-# *.sqlite3
-# sql_app*.db
+# Database files (never commit runtime data — created automatically at startup)
+*.db
+*.sqlite
+*.sqlite3
+sql_app*.db
+backend/data/*.db
+backend/data/*.sqlite*
 
 # Virtual environments
 venv/
@@ -45,13 +47,15 @@ output*.txt
 verification_results.txt
 working_model.txt
 
-# Temporary scripts
+# Temporary debug scripts (ad hoc, not the pytest suite in backend/tests/)
 check_db.py
 list_models.py
-verify_*.py
 find_working_model.py
 check_models.py
-test_*.py
+
+# Test artifacts / caches (does NOT match backend/tests/test_*.py — pytest suite is tracked)
+.pytest_cache/
+*.db-journal
 
 # Demo files (optional - remove if you want to include)
 # demo.txt

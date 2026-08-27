@@ -1,25 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FileText, CheckCircle, Clock, AlertCircle, ArrowLeft, Trophy } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, Clock, AlertCircle, ArrowLeft, ThumbsUp, ThumbsDown, Search } from 'lucide-react';
 import { getCandidateApplications } from '../api';
+
+const STATUS_STYLES = {
+    'Advancing to Interview': { icon: ThumbsUp, badge: 'bg-green-100 text-green-800', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+    'Rejected': { icon: ThumbsDown, badge: 'bg-red-100 text-red-800', iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+    'Under Review': { icon: Search, badge: 'bg-blue-100 text-blue-800', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+    'Pending': { icon: Clock, badge: 'bg-yellow-100 text-yellow-800', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600' },
+};
 
 export default function CandidateApplications() {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [candidateId, setCandidateId] = useState('');
-    const navigate = useNavigate();
 
     useEffect(() => {
-        const storedId = localStorage.getItem('candidateId');
-        if (!storedId) {
-            navigate('/candidate');
-            return;
-        }
-        setCandidateId(storedId);
-
+        // Identity is derived from the logged-in candidate's JWT — the backend
+        // never accepts a client-supplied candidate id here.
         async function loadApplications() {
             try {
-                const data = await getCandidateApplications(storedId);
+                const data = await getCandidateApplications();
                 setApplications(data);
             } catch (error) {
                 console.error("Failed to load applications", error);
@@ -28,7 +28,7 @@ export default function CandidateApplications() {
             }
         }
         loadApplications();
-    }, [navigate]);
+    }, []);
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -64,54 +64,49 @@ export default function CandidateApplications() {
             ) : (
                 <div className="bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
                     <ul className="divide-y divide-gray-200">
-                        {applications.map((app, index) => (
-                            <li key={index} className="px-4 py-6 sm:px-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <div className={`h-12 w-12 rounded-lg flex items-center justify-center mr-4 ${app.status === 'Evaluated' ? 'bg-green-100' : 'bg-yellow-100'}`}>
-                                            {app.status === 'Evaluated' ? (
-                                                <Trophy className="h-6 w-6 text-green-600" />
-                                            ) : (
-                                                <Clock className="h-6 w-6 text-yellow-600" />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-medium text-gray-900">{app.job_title}</h3>
-                                            <div className="flex items-center mt-1 text-sm text-gray-500">
-                                                <span>Applied on: {new Date(app.applied_at).toLocaleDateString()}</span>
-                                                <span className="mx-2">•</span>
-                                                <span className={`flex items-center font-medium ${app.status === 'Evaluated' ? 'text-green-600' : 'text-yellow-600'}`}>
-                                                    {app.status === 'Evaluated' ? (
-                                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                                    ) : (
-                                                        <Clock className="h-4 w-4 mr-1" />
-                                                    )}
-                                                    {app.status}
-                                                </span>
+                        {applications.map((app, index) => {
+                            const style = STATUS_STYLES[app.status] || STATUS_STYLES['Pending'];
+                            const StatusIcon = style.icon;
+                            return (
+                                <li key={index} className="px-4 py-6 sm:px-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <div className={`h-12 w-12 rounded-lg flex items-center justify-center mr-4 ${style.iconBg}`}>
+                                                <StatusIcon className={`h-6 w-6 ${style.iconColor}`} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-medium text-gray-900">{app.job_title}</h3>
+                                                <div className="flex items-center mt-1 text-sm text-gray-500">
+                                                    <span>Applied on: {new Date(app.applied_at).toLocaleDateString()}</span>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${style.badge}`}>
+                                            <StatusIcon className="h-4 w-4" />
+                                            {app.status}
+                                        </span>
                                     </div>
 
-                                    {app.status === 'Evaluated' && (
-                                        <div className="text-right">
-                                            <div className="text-sm text-gray-500 mb-1">Evaluation Score</div>
-                                            <div className="inline-flex items-center px-3 py-1 rounded-full text-xl font-bold bg-green-50 text-green-700 border border-green-200">
-                                                {(app.score * 100).toFixed(0)}%
+                                    {app.status === 'Pending' && (
+                                        <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-100">
+                                            <div className="flex">
+                                                <AlertCircle className="h-5 w-5 text-gray-400 mr-2" />
+                                                <p className="text-sm text-gray-600">Your application is in queue. The recruiter will trigger the AI evaluation soon.</p>
                                             </div>
                                         </div>
                                     )}
-                                </div>
-
-                                {app.status === 'Pending' && (
-                                    <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-100">
-                                        <div className="flex">
-                                            <AlertCircle className="h-5 w-5 text-gray-400 mr-2" />
-                                            <p className="text-sm text-gray-600">Your application is in queue. The recruiter will trigger the AI evaluation soon. Check back later for your score!</p>
+                                    {app.status === 'Under Review' && (
+                                        <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-100">
+                                            <div className="flex">
+                                                <FileText className="h-5 w-5 text-gray-400 mr-2" />
+                                                <p className="text-sm text-gray-600">Your work has been evaluated. The recruiter hasn't made a decision yet — check back later.</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </li>
-                        ))}
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             )}

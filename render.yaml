@@ -1,5 +1,5 @@
 services:
-  # Backend FastAPI Service (SQLite version)
+  # Backend FastAPI Service (MongoDB Atlas)
   - type: web
     name: signal-stack-backend
     env: python
@@ -7,13 +7,44 @@ services:
     startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     rootDir: backend
     envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_MODE
+        value: "false"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: CORS_ORIGINS
+        sync: false  # set to your deployed frontend origin(s), comma-separated, no "*"
+      - key: PUBLIC_BASE_URL
+        sync: false  # this backend's own public URL, used for canonical/OG/sitemap links
+      - key: FRONTEND_BASE_URL
+        sync: false  # deployed frontend origin, used for the public job page "Apply" CTA
       - key: GROQ_API_KEY
         sync: false
       - key: GITHUB_TOKEN
         sync: false
-      # Note: Database persists in ./data/ directory. 
-      # On Render free tier, this wipes on restart.
-      # Create a Disk and mount it if persistence is required.
+      - key: MONGODB_URI
+        sync: false  # MongoDB Atlas connection string — set from Atlas dashboard, never commit it
+      - key: MONGODB_DATABASE
+        value: signaxai
+      - key: SMTP_HOST
+        sync: false  # forgot-password OTP emails go unsent (logged only) if left empty
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: GITHUB_OAUTH_CLIENT_ID
+        sync: false  # "Continue with GitHub" is disabled (503) until this and the secret below are set
+      - key: GITHUB_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_OAUTH_REDIRECT_URI
+        sync: false  # must exactly match the callback URL registered on the GitHub OAuth App
 
   # Frontend Static Site
   - type: static
