@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, User, ThumbsUp, ThumbsDown, CheckCircle } from 'lucide-react';
-import { getEvaluation, setCandidateDecision } from '../api';
+import { ArrowLeft, User, ThumbsUp, ThumbsDown, CheckCircle, Sparkles } from 'lucide-react';
+import { getEvaluation, setCandidateDecision, suggestCandidateFeedback } from '../api';
 
 const DECISION_LABELS = {
     advancing: 'Advancing to Interview',
@@ -17,6 +17,8 @@ export default function CandidateDecision() {
     const [loading, setLoading] = useState(true);
     const [deciding, setDeciding] = useState(false);
     const [error, setError] = useState('');
+    const [feedback, setFeedback] = useState('');
+    const [generating, setGenerating] = useState(null); // null | 'advancing' | 'rejected'
 
     useEffect(() => {
         getEvaluation(outcomeId)
@@ -25,10 +27,22 @@ export default function CandidateDecision() {
             .finally(() => setLoading(false));
     }, [outcomeId]);
 
+    const handleGenerate = async (decision) => {
+        setGenerating(decision);
+        try {
+            const result = await suggestCandidateFeedback(outcomeId, candidateEmail, decision);
+            setFeedback(result.feedback);
+        } catch (err) {
+            setError(err.message || 'Could not generate feedback.');
+        } finally {
+            setGenerating(null);
+        }
+    };
+
     const handleDecision = async (decision) => {
         setDeciding(true);
         try {
-            await setCandidateDecision(outcomeId, candidateEmail, decision);
+            await setCandidateDecision(outcomeId, candidateEmail, decision, feedback.trim());
             navigate(`/dashboard/${outcomeId}`);
         } catch (err) {
             setError(err.message || 'Could not record decision.');
@@ -105,6 +119,40 @@ export default function CandidateDecision() {
                         );
                     })}
                 </ul>
+            </div>
+
+            <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">Feedback to candidate (optional)</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                    Generate a draft from the task scores above, then edit it — or write your own from scratch. Sent to the candidate alongside your decision below.
+                </p>
+                <div className="flex gap-2 mb-3">
+                    <button
+                        type="button"
+                        onClick={() => handleGenerate('advancing')}
+                        disabled={generating !== null}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50"
+                    >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {generating === 'advancing' ? 'Drafting...' : 'Draft (advancing)'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleGenerate('rejected')}
+                        disabled={generating !== null}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50"
+                    >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {generating === 'rejected' ? 'Drafting...' : 'Draft (rejected)'}
+                    </button>
+                </div>
+                <textarea
+                    rows={4}
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Write feedback for the candidate, or generate a draft above..."
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border"
+                />
             </div>
 
             <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">

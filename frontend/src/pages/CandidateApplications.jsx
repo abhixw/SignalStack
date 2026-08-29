@@ -104,6 +104,12 @@ export default function CandidateApplications() {
                                             </div>
                                         </div>
                                     )}
+                                    {app.feedback && (
+                                        <div className="mt-4 p-4 bg-indigo-50 rounded-md border border-indigo-100">
+                                            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1">Feedback from the recruiter</p>
+                                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{app.feedback}</p>
+                                        </div>
+                                    )}
                                 </li>
                             );
                         })}

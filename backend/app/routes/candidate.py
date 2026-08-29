@@ -122,6 +122,7 @@ async def get_candidate_applications(
             "job_title": outcome["title"] if outcome else "Unknown",
             "applied_at": proof["created_at"],
             "status": status_label,
+            "feedback": eval_body.get("candidate_feedback", {}).get(current_user["email"]),
         })
 
     return results

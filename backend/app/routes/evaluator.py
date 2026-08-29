@@ -8,6 +8,8 @@ from app.pipeline.evaluator import Evaluator
 from app.pipeline.signal_extractor import SignalExtractor
 from app.deps.auth import require_roles
 from app.constants import UserRole
+from app.services.errors import UpstreamServiceError
+from app.services.llm import GroqLLMService
 
 router = APIRouter(tags=["Evaluator"])
 
@@ -37,6 +39,7 @@ async def evaluate(
     # already advanced/rejected — carry those forward into the new run.
     previous = await crud.get_evaluation_by_job_id(db, request.outcome.id)
     previous_decisions = (previous or {}).get("evaluation", {}).get("candidate_decisions", {})
+    previous_feedback = (previous or {}).get("evaluation", {}).get("candidate_feedback", {})
 
     # 1. Extract Signals
     signals_map = {}
@@ -59,6 +62,7 @@ async def evaluate(
     evaluator = Evaluator()
     evaluation = evaluator.evaluate(request.outcome, request.proofs, signals_map)
     evaluation.candidate_decisions = {**previous_decisions, **evaluation.candidate_decisions}
+    evaluation.candidate_feedback = {**previous_feedback, **evaluation.candidate_feedback}
 
     # 3. Store Evaluation (Persist the result, denormalizing the outcome title)
     await crud.create_evaluation(db, evaluation, outcome_title=outcome_doc.get("title", ""))
@@ -140,12 +144,47 @@ async def set_candidate_decision(
     if payload.candidate_id not in evaluation.get("evaluation", {}).get("candidate_scores", {}):
         raise HTTPException(status_code=404, detail="This candidate has no score in the latest evaluation")
 
-    updated = await crud.set_candidate_decision(db, job_id, payload.candidate_id, payload.decision)
+    updated = await crud.set_candidate_decision(db, job_id, payload.candidate_id, payload.decision, payload.feedback)
     await crud.create_audit_log(
         db, "candidate_decision", job_id, "set",
-        {"candidate_id": payload.candidate_id, "decision": payload.decision},
+        {"candidate_id": payload.candidate_id, "decision": payload.decision, "has_feedback": payload.feedback is not None},
     )
-    return {"candidate_decisions": updated["evaluation"]["candidate_decisions"]}
+    return {
+        "candidate_decisions": updated["evaluation"]["candidate_decisions"],
+        "candidate_feedback": updated["evaluation"]["candidate_feedback"],
+    }
+
+
+@router.post("/evaluations/{job_id}/feedback/suggest")
+async def suggest_candidate_feedback(
+    job_id: str,
+    payload: schemas.FeedbackSuggestionRequest,
+    db: AsyncDatabase = Depends(get_db),
+    current_user: dict = Depends(require_roles(UserRole.RECRUITER, UserRole.ADMIN)),
+):
+    """Drafts feedback text from this candidate's task scores/reasons —
+    doesn't persist or send anything. The recruiter reviews/edits it and it's
+    only ever actually sent via POST /evaluations/{job_id}/decision."""
+    outcome_doc = await _assert_owns_outcome(db, job_id, current_user)
+
+    evaluation = await crud.get_evaluation_by_job_id(db, job_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="No evaluation exists for this job yet")
+    eval_body = evaluation["evaluation"]
+    task_scores = eval_body.get("candidate_task_scores", {}).get(payload.candidate_id)
+    if task_scores is None:
+        raise HTTPException(status_code=404, detail="This candidate has no score in the latest evaluation")
+    if payload.decision not in CANDIDATE_DECISIONS:
+        raise HTTPException(status_code=400, detail=f"decision must be one of: {', '.join(CANDIDATE_DECISIONS)}")
+
+    try:
+        feedback = GroqLLMService().generate_candidate_feedback(
+            [schemas.TaskScore(**ts) for ts in task_scores], payload.decision, outcome_doc.get("title", ""),
+        )
+    except UpstreamServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.to_dict())
+
+    return {"feedback": feedback}
 
 
 @router.get("/plugin/status/{job_id}")

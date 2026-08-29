@@ -145,7 +145,9 @@ async def get_evaluation_by_job_id(db: AsyncDatabase, job_id: str) -> Optional[d
     return results[0] if results else None
 
 
-async def set_candidate_decision(db: AsyncDatabase, job_id: str, candidate_id: str, decision: str) -> Optional[dict]:
+async def set_candidate_decision(
+    db: AsyncDatabase, job_id: str, candidate_id: str, decision: str, feedback: Optional[str] = None
+) -> Optional[dict]:
     """Sets on the LATEST evaluation for job_id — re-running an evaluation
     inserts a new doc (see create_evaluation), so a decision always applies to
     whichever run the recruiter is actually looking at.
@@ -163,11 +165,17 @@ async def set_candidate_decision(db: AsyncDatabase, job_id: str, candidate_id: s
         return None
     decisions = dict(latest.get("evaluation", {}).get("candidate_decisions") or {})
     decisions[candidate_id] = decision
-    await db.evaluations.update_one(
-        {"_id": latest["_id"]},
-        {"$set": {"evaluation.candidate_decisions": decisions}},
-    )
+    update = {"evaluation.candidate_decisions": decisions}
+
+    feedback_map = dict(latest.get("evaluation", {}).get("candidate_feedback") or {})
+    if feedback is not None:
+        feedback_map[candidate_id] = feedback
+        update["evaluation.candidate_feedback"] = feedback_map
+
+    await db.evaluations.update_one({"_id": latest["_id"]}, {"$set": update})
+
     latest["evaluation"]["candidate_decisions"] = decisions
+    latest["evaluation"]["candidate_feedback"] = feedback_map
     return latest
 
 

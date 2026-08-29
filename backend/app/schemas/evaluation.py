@@ -16,6 +16,11 @@ class EvaluationTrigger(BaseModel):
 class CandidateDecisionUpdate(BaseModel):
     candidate_id: str
     decision: str  # "advancing" | "rejected" — validated against DECISIONS in routes/evaluator.py
+    feedback: Optional[str] = None  # optional message sent to the candidate alongside the decision
+
+class FeedbackSuggestionRequest(BaseModel):
+    candidate_id: str
+    decision: str  # "advancing" | "rejected" — which way the recruiter is leaning, shapes the draft's tone
 
 class WorkAllocation(BaseModel):
     task_id: str
@@ -44,6 +49,10 @@ class EvaluationResponse(BaseModel):
     # the ONLY thing a candidate ever sees about their evaluation (see
     # GET /candidate/my-applications) — never the raw score.
     candidate_decisions: Dict[str, str] = {}
+    # Optional free-text message per candidate_id, set alongside the decision
+    # above (AI-drafted via POST /evaluations/{job_id}/feedback/suggest, or
+    # written by hand — the recruiter can edit or replace either way).
+    candidate_feedback: Dict[str, str] = {}
     global_signals_used: List[str]
     risk_flags: List[str]
     human_action_required: bool

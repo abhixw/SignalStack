@@ -149,6 +149,72 @@ class GroqLLMService:
             logger.warning("Groq evaluate_allocation error: %s", e)
             return None
 
+    def _fallback_feedback(self, task_scores: List["schemas.TaskScore"], decision: str) -> str:
+        strong = [ts.task_title for ts in task_scores if ts.score >= 0.66]
+        weak = [ts.task_title for ts in task_scores if ts.score < 0.33]
+        parts = [
+            "Thanks for your submission — we were impressed and would like to move forward to the interview stage."
+            if decision == "advancing" else
+            "Thank you for your submission. After review, we won't be moving forward with your application at this time."
+        ]
+        if strong:
+            parts.append(f"Particular strengths: {', '.join(strong)}.")
+        if weak:
+            parts.append(f"Areas that could be stronger: {', '.join(weak)}.")
+        return " ".join(parts)
+
+    def generate_candidate_feedback(
+        self, task_scores: List["schemas.TaskScore"], decision: str, outcome_title: str
+    ) -> str:
+        """A draft only — the recruiter reviews/edits it before it's ever sent
+        (see POST /evaluations/{job_id}/decision). Never mentions the raw
+        percentage scores, only what they qualitatively show."""
+        if not self.client:
+            logger.warning("GROQ_API_KEY not configured — using template-based feedback fallback.")
+            return self._fallback_feedback(task_scores, decision)
+
+        try:
+            scores_summary = "\n".join(
+                f"- {ts.task_title}: {'strong' if ts.score >= 0.66 else 'moderate' if ts.score >= 0.33 else 'weak'} match. "
+                f"Reasons: {'; '.join(ts.reasons) if ts.reasons else 'none recorded'}"
+                for ts in task_scores
+            )
+            decision_context = (
+                "The candidate is being ADVANCED to the interview stage."
+                if decision == "advancing" else
+                "The candidate is being REJECTED at this stage."
+            )
+
+            prompt = f"""
+            Act as a considerate technical recruiter writing feedback directly to a job candidate.
+
+            Outcome: {outcome_title}
+            {decision_context}
+
+            Task-by-task evaluation:
+            {scores_summary}
+
+            Write a short (3-5 sentence), specific, professional, honest-but-encouraging feedback
+            message for the candidate, referencing concrete strengths and gaps from the evaluation
+            above. Do NOT mention percentages, numeric scores, or internal scoring mechanics — speak
+            qualitatively (e.g. "your API implementation was solid" not "you scored 80% on API").
+
+            Output strictly valid JSON: {{"feedback": "..."}}
+            """
+
+            chat_completion = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model=self.model,
+                response_format={"type": "json_object"},
+            )
+            return json.loads(chat_completion.choices[0].message.content)["feedback"]
+        except Exception as e:
+            categorized = _categorize_groq_error(e)
+            logger.warning("LLM feedback generation failed: %s", categorized.to_dict())
+            if config.DEMO_MODE:
+                return self._fallback_feedback(task_scores, decision)
+            raise categorized
+
     def generate_tasks(self, description: str) -> List[Dict[str, Any]]:
         # Smart Fallback Logic v2 (Principal Engineer Persona)
         def get_fallback_tasks(desc: str):

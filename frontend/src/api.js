@@ -203,9 +203,19 @@ export async function getEvaluation(jobId) {
 }
 
 // The only thing that ever determines what a candidate sees about their
-// application (GET /candidate/my-applications) — the raw score never reaches them.
-export async function setCandidateDecision(jobId, candidateId, decision) {
+// application (GET /candidate/my-applications) — the raw score never reaches
+// them. `feedback` is optional free text, AI-drafted or hand-written.
+export async function setCandidateDecision(jobId, candidateId, decision, feedback) {
     return request(`/evaluations/${jobId}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ candidate_id: candidateId, decision, feedback: feedback || undefined }),
+    });
+}
+
+// Drafts feedback text from the candidate's task scores/reasons — doesn't
+// persist or send anything, just returns text for the recruiter to review/edit.
+export async function suggestCandidateFeedback(jobId, candidateId, decision) {
+    return request(`/evaluations/${jobId}/feedback/suggest`, {
         method: "POST",
         body: JSON.stringify({ candidate_id: candidateId, decision }),
     });

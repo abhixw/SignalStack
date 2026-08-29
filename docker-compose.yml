@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    # MongoDB is Atlas (external, from MONGODB_URI in backend/.env) — no local
+    # mongo service needed here.
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5175:5175"
+    environment:
+      # Browser-side fetches hit this from the HOST, not the Docker network —
+      # localhost:8001 is where the backend's port mapping actually lands.
+      - VITE_API_BASE_URL=http://localhost:8001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
