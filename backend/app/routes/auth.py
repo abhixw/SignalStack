@@ -131,9 +131,9 @@ async def forgot_password(payload: schemas.ForgotPasswordRequest, db: AsyncDatab
     expires_at = now + datetime.timedelta(minutes=config.PASSWORD_RESET_OTP_EXPIRE_MINUTES)
     await crud.create_password_reset(db, payload.email, _hash_otp(otp), expires_at)
 
-    subject = "Your SignaXAI password reset code"
+    subject = "Your Recruvoskill password reset code"
     body = (
-        f"Your SignaXAI password reset code is: {otp}\n\n"
+        f"Your Recruvoskill password reset code is: {otp}\n\n"
         f"This code expires in {config.PASSWORD_RESET_OTP_EXPIRE_MINUTES} minutes.\n"
         "If you didn't request this, you can safely ignore this email."
     )
@@ -261,9 +261,9 @@ async def _send_github_otp(email: str, github_username: str, otp: str) -> None:
     # Takes an already-generated OTP rather than generating its own — the
     # caller has already hashed and stored it, so the emailed code must be
     # the exact same one or verify-otp can never succeed.
-    subject = "Your SignaXAI verification code"
+    subject = "Your Recruvoskill verification code"
     body = (
-        f"Someone is signing in to SignaXAI with the GitHub account @{github_username} on this email.\n\n"
+        f"Someone is signing in to Recruvoskill with the GitHub account @{github_username} on this email.\n\n"
         f"Your verification code is: {otp}\n\n"
         f"This code expires in {config.GITHUB_OTP_EXPIRE_MINUTES} minutes.\n"
         "If this wasn't you, do not share this code with anyone."
@@ -341,7 +341,7 @@ async def github_callback(
     if state_doc.get("user_id"):
         existing_link = await crud.get_user_by_github_id(db, github_id)
         if existing_link and str(existing_link["_id"]) != state_doc["user_id"]:
-            # This GitHub account is already linked to a DIFFERENT SignaXAI
+            # This GitHub account is already linked to a DIFFERENT Recruvoskill
             # account — refuse rather than letting two accounts share one
             # verified identity.
             return _github_error_redirect("github_already_linked")

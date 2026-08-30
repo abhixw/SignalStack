@@ -1,7 +1,7 @@
 services:
   # Backend FastAPI Service (MongoDB Atlas)
   - type: web
-    name: signal-stack-backend
+    name: recruvoskill-backend
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
@@ -48,7 +48,7 @@ services:
 
   # Frontend Static Site
   - type: static
-    name: signal-stack-frontend
+    name: recruvoskill-frontend
     env: static
     buildCommand: npm install && npm run build
     publishDir: dist
@@ -57,5 +57,5 @@ services:
       - key: VITE_API_BASE_URL
         fromService:
           type: web
-          name: signal-stack-backend
+          name: recruvoskill-backend
           property: host

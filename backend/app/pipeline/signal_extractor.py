@@ -51,8 +51,25 @@ class SignalExtractor:
                     signals["ml_libraries"] = 1.0
                     break
         
-        # ... (web_framework is already done) ...
-        
+        # 7. Web Framework (Python or Node) — dependency manifests only, same
+        # bounded-scan approach as ml_libraries above.
+        framework_keywords = [
+            "flask", "django", "fastapi", "tornado", "bottle", "pyramid",  # Python
+            "express", "koa", "nestjs", "next", "fastify", "hapi",  # Node
+        ]
+        signals["web_framework"] = 0.0
+        checked_files = 0
+        for f in files:
+            fl = f.lower()
+            if fl.endswith(("requirements.txt", "setup.py", "pyproject.toml", "package.json")):
+                if checked_files >= 5:
+                    break
+                content = self.github.get_file_content(repo_url, f)
+                checked_files += 1
+                if any(kw in content.lower() for kw in framework_keywords):
+                    signals["web_framework"] = 1.0
+                    break
+
         # 8. HTML Templates
         has_templates = any("templates/" in f or f.endswith(".html") for f in files)
         signals["frontend_present"] = 1.0 if has_templates else 0.0

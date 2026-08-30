@@ -6,7 +6,7 @@ import { confirmGithubEmail, verifyGithubOtp } from '../api';
 
 const ERROR_MESSAGES = {
     github_oauth_failed: "GitHub sign-in didn't complete. Please try again.",
-    github_already_linked: 'That GitHub account is already connected to a different SignaXAI account.',
+    github_already_linked: 'That GitHub account is already connected to a different Recruvoskill account.',
     email_already_registered: "An account already exists with your GitHub account's email. Sign in with your password instead, then use \"Connect GitHub\" from there.",
     github_email_required: "We couldn't get a usable email from your GitHub account. Make sure you have a verified email on GitHub, then try again.",
     github_login_candidates_only: 'GitHub sign-in is only available for candidate accounts. Sign in with your email and password instead.',
@@ -16,7 +16,7 @@ const ERROR_MESSAGES = {
 const FLOW_EMAIL_COPY = {
     login: "To confirm it's really you — not just anyone using an already-signed-in browser — type the email and username connected to your GitHub account.",
     signup: 'Type the email and username connected to your GitHub account. We\'ll send a code there to finish creating your account.',
-    connect: "Type the email on YOUR SignaXAI account (not necessarily your GitHub email) and the GitHub username you're connecting — this confirms you're really the one connecting this GitHub account.",
+    connect: "Type the email on YOUR Recruvoskill account (not necessarily your GitHub email) and the GitHub username you're connecting — this confirms you're really the one connecting this GitHub account.",
     register_verify: "Type the email you signed up with and the GitHub username you're verifying — this confirms it's really you completing your own sign-up.",
 };
 

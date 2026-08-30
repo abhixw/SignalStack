@@ -1,4 +1,10 @@
-FROM python:3.12-slim
+# Pinned to bookworm (Debian 12, OpenSSL 3.0.x), not the unqualified
+# python:3.12-slim tag — that currently resolves to trixie (Debian 13),
+# whose much newer OpenSSL 3.5.x fails the TLS handshake against MongoDB
+# Atlas with "SSL: TLSV1_ALERT_INTERNAL_ERROR" (confirmed empirically:
+# same MONGODB_URI connects fine outside Docker, and switching tlsCAFile
+# didn't help — this is a protocol/cipher negotiation issue, not CA trust).
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 

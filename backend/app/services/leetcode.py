@@ -3,7 +3,7 @@ from typing import Optional
 
 import requests
 
-logger = logging.getLogger("signalstack.leetcode")
+logger = logging.getLogger("recruvoskill.leetcode")
 
 # LeetCode has no official/documented API. This is the same unauthenticated
 # GraphQL endpoint leetcode.com's own frontend calls to render a public

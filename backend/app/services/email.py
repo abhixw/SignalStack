@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 
 from app.config.config import config
 
-logger = logging.getLogger("signalstack.email")
+logger = logging.getLogger("recruvoskill.email")
 
 
 def send_email(to_email: str, subject: str, body: str) -> bool:

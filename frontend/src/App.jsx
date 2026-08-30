@@ -89,7 +89,7 @@ function AppShell() {
                         <div className="flex items-center">
                             <div className="flex-shrink-0 flex items-center mr-8">
                                 <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">
-                                    SignaXAI
+                                    Recruvoskill
                                 </span>
                             </div>
                             <div className="hidden sm:flex sm:space-x-8 h-full">

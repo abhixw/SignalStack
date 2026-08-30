@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+import certifi
 from bson import ObjectId
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
@@ -8,7 +9,7 @@ from pymongo.errors import PyMongoError
 
 from app.config.config import config
 
-logger = logging.getLogger("signalstack.db")
+logger = logging.getLogger("recruvoskill.db")
 
 _client: Optional[AsyncMongoClient] = None
 _db: Optional[AsyncDatabase] = None
@@ -19,7 +20,12 @@ async def connect_to_mongo() -> None:
     connectivity check. Called once from the FastAPI lifespan on startup."""
     global _client, _db
 
-    client = AsyncMongoClient(config.MONGODB_URI, serverSelectionTimeoutMS=5000)
+    # tlsCAFile explicitly set to certifi's bundle rather than relying on the
+    # OS's own CA store — minimal/slim container images (Debian slim, Alpine)
+    # can have an outdated or incomplete system CA store that fails the TLS
+    # handshake against Atlas with SSL: TLSV1_ALERT_INTERNAL_ERROR, even
+    # though the same URI connects fine from a normal dev machine.
+    client = AsyncMongoClient(config.MONGODB_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
     database = client[config.MONGODB_ACTIVE_DATABASE]
 
     try:

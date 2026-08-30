@@ -345,7 +345,7 @@ function ForgotPasswordForm({ onDone, onBackToSignIn }) {
 function RoleSelect({ onSelect }) {
     return (
         <div>
-            <h2 className="font-serif text-3xl text-gray-900">Welcome to SignaXAI</h2>
+            <h2 className="font-serif text-3xl text-gray-900">Welcome to Recruvoskill</h2>
             <p className="mt-2 text-sm text-gray-500 mb-8">Are you hiring, or applying?</p>
 
             <div className="space-y-4">
@@ -415,7 +415,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-lg shadow-lg">
                             S
                         </div>
-                        <span className="text-xl font-bold tracking-tight">SignaXAI</span>
+                        <span className="text-xl font-bold tracking-tight">Recruvoskill</span>
                     </div>
 
                     <div className="mt-10 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-indigo-100">
@@ -428,7 +428,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                     </h1>
 
                     <p className="mt-5 max-w-md text-indigo-100/80 leading-relaxed">
-                        SignaXAI evaluates real GitHub work — tests, CI/CD, architecture — and shows the evidence behind every score.
+                        Recruvoskill evaluates real GitHub work — tests, CI/CD, architecture — and shows the evidence behind every score.
                     </p>
                 </div>
 
@@ -447,7 +447,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                 </div>
 
                 <div className="relative text-xs text-indigo-100/40">
-                    SignaXAI &middot; outcome-based hiring
+                    Recruvoskill &middot; outcome-based hiring
                 </div>
             </div>
 
@@ -458,7 +458,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                         <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-sm">
                             S
                         </div>
-                        <span className="text-lg font-bold tracking-tight text-gray-900">SignaXAI</span>
+                        <span className="text-lg font-bold tracking-tight text-gray-900">Recruvoskill</span>
                     </div>
 
                     {!role ? (

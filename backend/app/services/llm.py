@@ -20,7 +20,7 @@ from app.services.errors import (
 )
 import app.schemas as schemas
 
-logger = logging.getLogger("signalstack.llm")
+logger = logging.getLogger("recruvoskill.llm")
 
 
 def _categorize_groq_error(e: Exception) -> UpstreamServiceError:

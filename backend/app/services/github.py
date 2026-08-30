@@ -17,7 +17,7 @@ from app.services.errors import (
     UPSTREAM_SERVICE_ERROR,
 )
 
-logger = logging.getLogger("signalstack.github")
+logger = logging.getLogger("recruvoskill.github")
 
 _REQUEST_TIMEOUT_SECONDS = 10
 # Only github.com is a valid host — repo_url is user-supplied, so this also
@@ -31,9 +31,9 @@ class GitHubService:
         self.token = config.GITHUB_TOKEN
         self.headers = {
             "Authorization": f"token {self.token}",
-            "User-Agent": "SignalStack-Agent/1.0"
+            "User-Agent": "Recruvoskill-Agent/1.0"
         } if self.token else {
-            "User-Agent": "SignalStack-Agent/1.0"
+            "User-Agent": "Recruvoskill-Agent/1.0"
         }
         self.api_base = "https://api.github.com"
 
@@ -78,7 +78,7 @@ class GitHubService:
         if response.status_code in (401, 403) and self.token:
             # Could be an invalid/rate-limited token — public repos often still work without one.
             logger.info("GitHub request got %s with token; retrying unauthenticated.", response.status_code)
-            response = _do({"User-Agent": "SignalStack-Agent/1.0"})
+            response = _do({"User-Agent": "Recruvoskill-Agent/1.0"})
 
         if response.status_code == 404:
             raise UpstreamServiceError("github", NOT_FOUND, "Repository or resource not found.", retryable=False, status_code=404)

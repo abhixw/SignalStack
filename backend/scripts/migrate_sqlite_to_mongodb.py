@@ -1,7 +1,7 @@
 """One-time migration: import an existing SQLite dev/demo database into MongoDB.
 
 This script is NOT part of the running application — SQLite/SQLAlchemy are not
-runtime dependencies of SignaXAI after this migration. It exists purely so any
+runtime dependencies of Recruvoskill after this migration. It exists purely so any
 demo/dev data that predates the MongoDB migration isn't lost.
 
 Usage (run from backend/):

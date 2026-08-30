@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-const TOKEN_KEY = "signalstack_token";
+const TOKEN_KEY = "recruvoskill_token";
 
 export function getToken() {
     return localStorage.getItem(TOKEN_KEY);
@@ -44,7 +44,7 @@ export async function registerCandidateStart({ email, password, fullName, github
 
 // Fired whenever a request comes back 401 so AuthContext can clear stale state
 // and redirect to /login, without every call site needing to handle it.
-const AUTH_EXPIRED_EVENT = "signalstack:auth-expired";
+const AUTH_EXPIRED_EVENT = "recruvoskill:auth-expired";
 
 async function request(path, options = {}) {
     const token = getToken();

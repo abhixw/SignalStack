@@ -80,25 +80,53 @@ class Matcher:
             return sum(signal_values) / len(signal_values)
         return 0.0
 
-    def get_matched_reason(self, task_title: str, signals: Dict[str, Any]) -> List[str]:
-         matched_signals = self._get_task_signals(task_title)
-         
-         # Build human-readable reasons
-         reason_parts = []
-         if signals.get("ml_model_present"):
-             reason_parts.append("ML models found")
-         if signals.get("web_framework"):
-             reason_parts.append("Web framework detected")
-         if signals.get("frontend_present"):
-             reason_parts.append("Frontend templates present")
-         if signals.get("deployment_ready"):
-             reason_parts.append("Deployment artifacts found")
-         if signals.get("tests_present"):
-             reason_parts.append("Tests present")
-         if signals.get("dsa_proficiency"):
-             reason_parts.append("Codeforces/LeetCode activity found")
+    # Human-readable label per signal name — used only for the reason text
+    # below, never for scoring itself.
+    _SIGNAL_LABELS = {
+        "tests_present": "tests",
+        "migrations_present": "database migrations",
+        "deployment_ready": "deployment config (Dockerfile/Procfile)",
+        "ci_cd_present": "a CI/CD pipeline",
+        "ml_model_present": "trained ML model artifacts",
+        "ml_libraries": "ML libraries",
+        "web_framework": "a web framework",
+        "frontend_present": "frontend templates",
+        "static_assets": "static assets (CSS/JS)",
+        "nlp_present": "NLP libraries",
+        "dsa_proficiency": "Codeforces/LeetCode activity",
+    }
 
-         if reason_parts:
-             return [", ".join(reason_parts)]
-         else:
-             return [f"Matched on {', '.join(matched_signals)}"]
+    def get_matched_reason(self, task_title: str, signals: Dict[str, Any]) -> List[str]:
+        """Explains THIS task's score specifically — only the signals that
+        actually fed into calculate_task_score for this task title, split
+        into what was found vs. what's missing, so a low score is explained
+        (not just silent) and a reason never cites something irrelevant to
+        the task it's attached to."""
+        relevant_signal_names = self._get_task_signals(task_title)
+
+        found, missing = [], []
+        for signal_name in relevant_signal_names:
+            label = self._SIGNAL_LABELS.get(signal_name, signal_name)
+            value = signals.get(signal_name, 0.0)
+
+            if signal_name == "dsa_proficiency":
+                # Graded 0.0-1.0, not binary — describe the strength, not
+                # just presence/absence.
+                if value >= 0.66:
+                    found.append(f"strong {label}")
+                elif value >= 0.33:
+                    found.append(f"some {label}")
+                else:
+                    missing.append(label)
+            elif value:
+                found.append(label)
+            else:
+                missing.append(label)
+
+        parts = []
+        if found:
+            parts.append(f"Found: {', '.join(found)}")
+        if missing:
+            parts.append(f"Missing: {', '.join(missing)}")
+
+        return [". ".join(parts)] if parts else ["No matching signals for this task"]

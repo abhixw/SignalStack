@@ -4,7 +4,7 @@ from bson.errors import InvalidId
 from fastapi import HTTPException, status
 from pymongo.errors import DuplicateKeyError, PyMongoError
 
-logger = logging.getLogger("signalstack.mongo")
+logger = logging.getLogger("recruvoskill.mongo")
 
 
 def resource_not_found(name: str = "Resource") -> HTTPException:

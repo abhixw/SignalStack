@@ -52,13 +52,13 @@ async def job_page(outcome_id: str, slug: str, request: Request, db: AsyncDataba
         "description": description or outcome["title"],
         "identifier": {
             "@type": "PropertyValue",
-            "name": "SignaXAI",
+            "name": "Recruvoskill",
             "value": outcome["_id"],
         },
         "datePosted": created_at.date().isoformat() if created_at else None,
         "hiringOrganization": {
             "@type": "Organization",
-            "name": "SignaXAI",
+            "name": "Recruvoskill",
             "sameAs": config.FRONTEND_BASE_URL,
         },
         # Outcomes are proof-of-work based and not tied to a physical office by default.

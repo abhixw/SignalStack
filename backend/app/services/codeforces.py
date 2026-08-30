@@ -8,7 +8,7 @@ import requests
 from app.config.config import config
 from app.services.errors import UpstreamServiceError, NOT_FOUND, UPSTREAM_SERVICE_ERROR, TIMEOUT
 
-logger = logging.getLogger("signalstack.codeforces")
+logger = logging.getLogger("recruvoskill.codeforces")
 
 _API_BASE = "https://codeforces.com/api"
 _TIMEOUT_SECONDS = 10

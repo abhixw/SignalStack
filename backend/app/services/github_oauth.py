@@ -7,7 +7,7 @@ import requests
 from app.config.config import config
 from app.services.errors import UpstreamServiceError, AUTH_FAILURE, UPSTREAM_SERVICE_ERROR, TIMEOUT
 
-logger = logging.getLogger("signalstack.github_oauth")
+logger = logging.getLogger("recruvoskill.github_oauth")
 
 _AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 _TOKEN_URL = "https://github.com/login/oauth/access_token"

@@ -14,7 +14,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
-logger = logging.getLogger("signalstack")
+logger = logging.getLogger("recruvoskill")
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     await db_module.close_mongo_connection()
 
 
-app = FastAPI(title="SignaXAI API", lifespan=lifespan)
+app = FastAPI(title="Recruvoskill API", lifespan=lifespan)
 
 # CORS — explicit allowlist from CORS_ORIGINS (never "*" together with credentials).
 app.add_middleware(
